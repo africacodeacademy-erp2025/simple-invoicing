@@ -11,6 +11,7 @@ export interface InvoiceTemplate {
   downloadFormats: DownloadFormat[];
   isPopular?: boolean;
   isNew?: boolean;
+  isPremium?: boolean;
 }
 
 export interface DownloadFormat {
@@ -178,6 +179,7 @@ export class TemplateService {
             },
           ],
           isPopular: true,
+          isPremium: true,
         },
         {
           id: "creative",
@@ -213,6 +215,7 @@ export class TemplateService {
               icon: "📊",
             },
           ],
+          isPremium: true,
         },
       ];
 

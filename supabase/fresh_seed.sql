@@ -1,8 +1,59 @@
 -- Easy Charge Pro - Database Schema and RLS Setup
--- This file sets up the required tables and Row Level Security policies
+-- This file sets up the required tables, storage, and Row Level Security policies
 
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- =============================================
+-- STORAGE BUCKET (PROFILE IMAGES)
+-- =============================================
+
+-- 1. Create profile-images bucket if it doesn't exist
+INSERT INTO storage.buckets (id, name, public)
+SELECT 'profile-images', 'profile-images', false
+WHERE NOT EXISTS (
+    SELECT 1 FROM storage.buckets WHERE id = 'profile-images'
+);
+
+-- 2. Drop existing policies on the bucket to ensure a clean slate
+DROP POLICY IF EXISTS "Allow authenticated select on profile-images" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated insert on own folder in profile-images" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated update on own folder in profile-images" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated delete on own folder in profile-images" ON storage.objects;
+
+-- 3. Create policies for profile-images bucket
+--    - Allow authenticated users to view files.
+--    - Allow authenticated users to insert, update, or delete files in their own folder (named after their UID).
+
+CREATE POLICY "Allow authenticated select on profile-images"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (bucket_id = 'profile-images');
+
+CREATE POLICY "Allow authenticated insert on own folder in profile-images"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'profile-images' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
+CREATE POLICY "Allow authenticated update on own folder in profile-images"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'profile-images' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
+CREATE POLICY "Allow authenticated delete on own folder in profile-images"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'profile-images' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
 
 -- =============================================
 -- USER PROFILES TABLE
@@ -109,15 +160,15 @@ ALTER TABLE invoice_items ENABLE ROW LEVEL SECURITY;
 -- USER PROFILES RLS POLICIES
 -- =============================================
 
--- Users can view their own profile
+DROP POLICY IF EXISTS "Users can view their own profile" ON user_profiles;
 CREATE POLICY "Users can view their own profile" ON user_profiles
-    FOR SELECT USING (auth.uid() = id);
+    FOR SELECT USING (auth.uid() = user_id);
 
--- Users can insert their own profile
+DROP POLICY IF EXISTS "Users can insert their own profile" ON user_profiles;
 CREATE POLICY "Users can insert their own profile" ON user_profiles
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Users can update their own profile
+DROP POLICY IF EXISTS "Users can update their own profile" ON user_profiles;
 CREATE POLICY "Users can update their own profile" ON user_profiles
     FOR UPDATE USING (auth.uid() = user_id);
 
@@ -125,19 +176,19 @@ CREATE POLICY "Users can update their own profile" ON user_profiles
 -- CLIENTS RLS POLICIES
 -- =============================================
 
--- Users can view their own clients
+DROP POLICY IF EXISTS "Users can view their own clients" ON clients;
 CREATE POLICY "Users can view their own clients" ON clients
     FOR SELECT USING (auth.uid() = user_id);
 
--- Users can insert their own clients
+DROP POLICY IF EXISTS "Users can insert their own clients" ON clients;
 CREATE POLICY "Users can insert their own clients" ON clients
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Users can update their own clients
+DROP POLICY IF EXISTS "Users can update their own clients" ON clients;
 CREATE POLICY "Users can update their own clients" ON clients
     FOR UPDATE USING (auth.uid() = user_id);
 
--- Users can delete their own clients
+DROP POLICY IF EXISTS "Users can delete their own clients" ON clients;
 CREATE POLICY "Users can delete their own clients" ON clients
     FOR DELETE USING (auth.uid() = user_id);
 
@@ -145,19 +196,19 @@ CREATE POLICY "Users can delete their own clients" ON clients
 -- INVOICES RLS POLICIES
 -- =============================================
 
--- Users can view their own invoices
+DROP POLICY IF EXISTS "Users can view their own invoices" ON invoices;
 CREATE POLICY "Users can view their own invoices" ON invoices
     FOR SELECT USING (auth.uid() = user_id);
 
--- Users can insert their own invoices
+DROP POLICY IF EXISTS "Users can insert their own invoices" ON invoices;
 CREATE POLICY "Users can insert their own invoices" ON invoices
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Users can update their own invoices
+DROP POLICY IF EXISTS "Users can update their own invoices" ON invoices;
 CREATE POLICY "Users can update their own invoices" ON invoices
     FOR UPDATE USING (auth.uid() = user_id);
 
--- Users can delete their own invoices
+DROP POLICY IF EXISTS "Users can delete their own invoices" ON invoices;
 CREATE POLICY "Users can delete their own invoices" ON invoices
     FOR DELETE USING (auth.uid() = user_id);
 
@@ -165,7 +216,7 @@ CREATE POLICY "Users can delete their own invoices" ON invoices
 -- INVOICE ITEMS RLS POLICIES
 -- =============================================
 
--- Users can view items for their own invoices
+DROP POLICY IF EXISTS "Users can view items for their own invoices" ON invoice_items;
 CREATE POLICY "Users can view items for their own invoices" ON invoice_items
     FOR SELECT USING (
         EXISTS (
@@ -175,7 +226,7 @@ CREATE POLICY "Users can view items for their own invoices" ON invoice_items
         )
     );
 
--- Users can insert items for their own invoices
+DROP POLICY IF EXISTS "Users can insert items for their own invoices" ON invoice_items;
 CREATE POLICY "Users can insert items for their own invoices" ON invoice_items
     FOR INSERT WITH CHECK (
         EXISTS (
@@ -185,7 +236,7 @@ CREATE POLICY "Users can insert items for their own invoices" ON invoice_items
         )
     );
 
--- Users can update items for their own invoices
+DROP POLICY IF EXISTS "Users can update items for their own invoices" ON invoice_items;
 CREATE POLICY "Users can update items for their own invoices" ON invoice_items
     FOR UPDATE USING (
         EXISTS (
@@ -195,7 +246,7 @@ CREATE POLICY "Users can update items for their own invoices" ON invoice_items
         )
     );
 
--- Users can delete items for their own invoices
+DROP POLICY IF EXISTS "Users can delete items for their own invoices" ON invoice_items;
 CREATE POLICY "Users can delete items for their own invoices" ON invoice_items
     FOR DELETE USING (
         EXISTS (
@@ -240,14 +291,17 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers for updated_at
+DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
 CREATE TRIGGER update_user_profiles_updated_at 
     BEFORE UPDATE ON user_profiles 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_clients_updated_at ON clients;
 CREATE TRIGGER update_clients_updated_at 
     BEFORE UPDATE ON clients 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_invoices_updated_at ON invoices;
 CREATE TRIGGER update_invoices_updated_at 
     BEFORE UPDATE ON invoices 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -257,15 +311,13 @@ CREATE TRIGGER update_invoices_updated_at
 -- =============================================
 
 -- This script has successfully created:
--- ✅ user_profiles table with RLS
--- ✅ clients table with RLS  
--- ✅ invoices table with RLS
--- ✅ invoice_items table with RLS
+-- ✅ All tables (user_profiles, clients, invoices, invoice_items)
+-- ✅ profile-images storage bucket with policies
 -- ✅ All necessary indexes for performance
 -- ✅ Updated_at triggers for all tables
--- ✅ Complete Row Level Security policies
+-- ✅ Complete Row Level Security policies for tables and storage
 
 -- Next steps:
--- 1. Create users in Supabase Auth
--- 2. Run sample_data_seed.sql for test data (optional)
+-- 1. Create users in Supabase Auth if you haven't already.
+-- 2. Run sample_data_seed.sql for test data (optional).
 -- 3. Start using the application!
