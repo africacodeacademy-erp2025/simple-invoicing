@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { loadStripe, Stripe } from "@stripe/stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 
 // ⚠️ Replace with your own Stripe publishable key
 const stripePromise = loadStripe("pk_test_51SF2U2JAL9HWu2UnSLXslUnEFgRO6DMnxBnxwgzQn7CpFgabYAKeMiJk6wLKFJw7revAceK03pUM1jlrAAtgvXnk00aU59Pvjm");
@@ -15,9 +15,7 @@ export default function StripeCheckout({
 
   const handleCheckout = async () => {
     setLoading(true);
-
     try {
-      // ✅ Call Supabase Edge Function
       const response = await fetch(
         "https://oudrqssttfdapvmbxtrx.functions.supabase.co/create-stripe-session",
         {
@@ -36,20 +34,12 @@ export default function StripeCheckout({
       }
 
       const data = await response.json();
-      if (!data.sessionId) {
-        throw new Error("No session ID returned from backend");
+      if (!data.url) {
+        throw new Error("No URL returned from backend");
       }
 
-      // ✅ Redirect to Stripe Checkout
-      const stripe: Stripe | null = await stripePromise;
-      if (stripe) {
-        const { error } = await stripe.redirectToCheckout({
-          sessionId: data.sessionId,
-        });
-        if (error) console.error("Stripe redirect error:", error.message);
-      } else {
-        console.error("Stripe failed to initialize");
-      }
+      // ✅ Redirect directly to Stripe-hosted Checkout page
+      window.location.href = data.url;
     } catch (err) {
       console.error("Checkout failed:", err);
     } finally {
