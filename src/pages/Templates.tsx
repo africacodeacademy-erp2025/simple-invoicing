@@ -7,7 +7,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Download,
@@ -18,8 +17,6 @@ import {
   FileSpreadsheet,
   FileImage,
   Loader2,
-  Search,
-  Filter,
   Lock,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -34,10 +31,11 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { TemplateController } from "@/controllers/template.controller";
 import { InvoiceTemplate } from "@/services/template.service";
-import { useAuth } from "@/contexts/AuthContext"; // Assuming this hook provides user info
+import { useAuth } from "@/contexts/AuthContext";
+import StripeCheckout from "@/components/payments/StripeCheckout";
 
 export default function Templates() {
-  const { user } = useAuth(); // Get user from AuthContext
+  const { user } = useAuth();
   const [templates, setTemplates] = useState<InvoiceTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -166,7 +164,12 @@ export default function Templates() {
   };
 
   const renderTemplatePreview = (template: InvoiceTemplate) => {
-    // ... [same as before]
+    // Placeholder preview
+    return (
+      <div className="flex items-center justify-center h-full w-full text-gray-400">
+        <FileText className="h-10 w-10" />
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -182,7 +185,38 @@ export default function Templates() {
 
   return (
     <div className="space-y-6">
-      {/* ... [Header and Filters are same as before] */}
+      {/* Header and Filters */}
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">Invoice Templates</h2>
+          <p className="text-muted-foreground text-sm">
+            Browse and download invoice templates for your business.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Search templates..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-48"
+          />
+          <Select
+            value={selectedCategory}
+            onValueChange={setSelectedCategory}
+          >
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       {/* Templates Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -259,8 +293,6 @@ export default function Templates() {
         ))}
       </div>
 
-      {/* ... [Empty state and other modals are same as before] */}
-
       {/* Upgrade Modal */}
       <Dialog open={isUpgradeModalOpen} onOpenChange={setIsUpgradeModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
@@ -275,13 +307,12 @@ export default function Templates() {
               Unlock the "{selectedTemplate?.name}" Template
             </h3>
             <p className="text-muted-foreground mt-2">
-              This template is part of our Pro plan. Upgrade now to download this
-              and other premium templates, plus get access to all pro features.
+              This template is part of our Pro plan. Pay to unlock this and other premium templates, plus get access to all pro features.
             </p>
-            <Button size="lg" className="mt-6 w-full">
-              <Sparkles className="h-4 w-4 mr-2" />
-              Upgrade to Pro Plan
-            </Button>
+            <StripeCheckout
+              amount={100} // $1.00 in cents for test
+              description={`Unlock the "${selectedTemplate?.name}" Template`}
+            />
             <Button
               variant="ghost"
               className="mt-2 w-full"
