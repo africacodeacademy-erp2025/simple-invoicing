@@ -1,42 +1,76 @@
-#root {
+:root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  font-family: "Inter", system-ui, sans-serif;
+  color-scheme: light dark;
 }
 
+/* Logo Styles */
 .logo {
   height: 6em;
   padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+  will-change: transform, filter;
+  transition: transform 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 1.5em rgba(100, 108, 255, 0.6));
 }
 .logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  filter: drop-shadow(0 0 1.5em #61dafb88);
 }
 
+/* Logo Spin Animation */
 @keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @media (prefers-reduced-motion: no-preference) {
   a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+    animation: logo-spin 20s linear infinite;
   }
 }
 
+/* Card Styles */
 .card {
   padding: 2em;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
 }
 
+/* Links / Documentation */
 .read-the-docs {
-  color: #888;
+  color: #6b7280; /* Tailwind Gray-500 */
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+.read-the-docs:hover {
+  color: #6366f1; /* Tailwind Indigo-500 */
+  text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  :root {
+    padding: 1rem;
+  }
+  .logo {
+    height: 4.5em;
+    padding: 1rem;
+  }
+  .card {
+    padding: 1.5em;
+  }
 }

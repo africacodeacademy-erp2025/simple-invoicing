@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { DashboardLayout } from "./components/layouts/DashboardLayout";
+
 import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
@@ -35,12 +36,12 @@ const App = () => (
           }}
         >
           <Routes>
-            {/* Public routes */}
+            {/* Public Routes */}
             <Route path="/" element={<Landing />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
 
-            {/* Dashboard Layout with nested routes */}
+            {/* Protected Dashboard Routes */}
             <Route
               path="/app"
               element={
@@ -49,6 +50,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             >
+              <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="create-invoice" element={<CreateInvoice />} />
               <Route path="edit-invoice/:id" element={<EditInvoice />} />
@@ -59,34 +61,19 @@ const App = () => (
               <Route path="profile" element={<Profile />} />
             </Route>
 
-            {/* Legacy routes for backward compatibility */}
-            <Route
-              path="/dashboard"
-              element={<Navigate to="/app/dashboard" replace />}
-            />
-            <Route
-              path="/create-invoice"
-              element={<Navigate to="/app/create-invoice" replace />}
-            />
-            <Route
-              path="/invoices"
-              element={<Navigate to="/app/invoices" replace />}
-            />
-            <Route
-              path="/clients"
-              element={<Navigate to="/app/clients" replace />}
-            />
-            <Route
-              path="/templates"
-              element={<Navigate to="/app/templates" replace />}
-            />
-            <Route
-              path="/profile"
-              element={<Navigate to="/app/profile" replace />}
-            />
+            {/* Legacy Routes - Redirect to new /app/* */}
+            {["/dashboard", "/create-invoice", "/invoices", "/clients", "/templates", "/profile"].map((path) => (
+              <Route
+                key={path}
+                path={path}
+                element={<Navigate to={`/app${path}`} replace />}
+              />
+            ))}
+
+            {/* Optional legacy landing */}
             <Route path="/legacy" element={<Index />} />
 
-            {/* Catch-all route */}
+            {/* Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
