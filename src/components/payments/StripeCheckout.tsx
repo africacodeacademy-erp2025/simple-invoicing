@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
+import { supabase } from "@/lib/supabase"; // 👈 make sure this points to your Supabase client
 
 // ⚠️ Replace with your own Stripe publishable key
-const stripePromise = loadStripe("pk_test_51SF2U2JAL9HWu2UnSLXslUnEFgRO6DMnxBnxwgzQn7CpFgabYAKeMiJk6wLKFJw7revAceK03pUM1jlrAAtgvXnk00aU59Pvjm");
+const stripePromise = loadStripe(
+  "pk_test_51SF2U2JAL9HWu2UnSLXslUnEFgRO6DMnxBnxwgzQn7CpFgabYAKeMiJk6wLKFJw7revAceK03pUM1jlrAAtgvXnk00aU59Pvjm"
+);
 
 export default function StripeCheckout({
   amount,
@@ -16,12 +19,24 @@ export default function StripeCheckout({
   const handleCheckout = async () => {
     setLoading(true);
     try {
+      // ✅ Get user session from Supabase
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error || !session) {
+        throw new Error("User not logged in or no session found");
+      }
+
+      // ✅ Call Supabase Edge Function with authorization header
       const response = await fetch(
         "https://oudrqssttfdapvmbxtrx.functions.supabase.co/create-stripe-session",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`, // 👈 send the user's token
           },
           body: JSON.stringify({ amount, description }),
         }
@@ -38,10 +53,11 @@ export default function StripeCheckout({
         throw new Error("No URL returned from backend");
       }
 
-      // ✅ Redirect directly to Stripe-hosted Checkout page
+      // ✅ Redirect to Stripe-hosted Checkout
       window.location.href = data.url;
     } catch (err) {
       console.error("Checkout failed:", err);
+      alert("Checkout failed: " + err.message);
     } finally {
       setLoading(false);
     }
