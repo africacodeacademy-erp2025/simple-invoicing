@@ -2,9 +2,9 @@ import { useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { supabase } from "@/lib/supabase"; // 👈 make sure this points to your Supabase client
 
-// ⚠️ Replace with your own Stripe publishable key
+// Load Stripe publishable key from environment variables
 const stripePromise = loadStripe(
-  "pk_test_51SF2U2JAL9HWu2UnSLXslUnEFgRO6DMnxBnxwgzQn7CpFgabYAKeMiJk6wLKFJw7revAceK03pUM1jlrAAtgvXnk00aU59Pvjm"
+  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ""
 );
 
 export default function StripeCheckout({
@@ -30,8 +30,9 @@ export default function StripeCheckout({
       }
 
       // ✅ Call Supabase Edge Function with authorization header
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const response = await fetch(
-        "https://oudrqssttfdapvmbxtrx.functions.supabase.co/create-stripe-session",
+        `${supabaseUrl}/functions/v1/create-stripe-session`,
         {
           method: "POST",
           headers: {

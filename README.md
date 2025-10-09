@@ -71,6 +71,12 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 # OpenAI Configuration
 VITE_OPENAI_API_KEY=your_openai_api_key_here
 VITE_OPENAI_MODEL=gpt-4o-mini
+
+# Stripe Configuration
+VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+
+# Resend Configuration (for email functionality)
+VITE_RESEND_API_KEY=your_resend_api_key
 ```
 
 ### Getting API Keys
@@ -90,6 +96,22 @@ VITE_OPENAI_MODEL=gpt-4o-mini
 3. Navigate to **API Keys** section
 4. Create a new API key
 5. Copy the key and paste it in your `.env.local` file
+
+#### Stripe Setup
+
+1. Visit [Stripe Dashboard](https://dashboard.stripe.com/)
+2. Sign up or log in to your account
+3. Navigate to **Developers** → **API Keys**
+4. Copy the **Publishable key** (starts with `pk_test_` or `pk_live_`)
+5. Paste it in your `.env.local` file as `VITE_STRIPE_PUBLISHABLE_KEY`
+
+#### Resend Setup (for Email Functionality)
+
+1. Visit [Resend Dashboard](https://resend.com/)
+2. Sign up or log in to your account
+3. Navigate to **API Keys** section
+4. Create a new API key
+5. Copy the key and paste it in your `.env.local` file as `VITE_RESEND_API_KEY`
 
 > ⚠️ **Security Note**: This application uses OpenAI API directly in the browser, which exposes your API key to users. For production use, implement a backend proxy to keep your API key secure.
 

@@ -2,7 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, ArrowLeft, Eye, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Download, ArrowLeft, Eye, Loader2, Mail, Send } from "lucide-react";
 import { InvoicePreview } from "@/components/InvoicePreview";
 import { InvoiceData, currencies } from "@/types/invoice";
 import { InvoiceTemplate } from "@/types/templates";
@@ -10,12 +15,22 @@ import { generatePDF } from "@/utils/pdfGenerator";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { InvoiceController } from "@/controllers/invoice.controller";
+import { EmailService } from "@/services/email.service";
 
 const ViewInvoice = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [emailData, setEmailData] = useState({
+    recipientEmail: "",
+    recipientName: "",
+    customMessage: "",
+    ccOwner: true,
+    autoGenerateMessage: true,
+  });
   const invoicePreviewRef = useRef<HTMLDivElement>(null);
 
   // Get user data
@@ -71,7 +86,7 @@ const ViewInvoice = () => {
       try {
         const response = await InvoiceController.getInvoice(id);
         if (response.success && response.data) {
-          const invoice = response.data;
+          const invoice = Array.isArray(response.data) ? response.data[0] : response.data;
 
           // Convert saved invoice data to InvoiceData format
           const convertedData: InvoiceData = {
@@ -80,7 +95,7 @@ const ViewInvoice = () => {
             dueDate: invoice.due_date,
             currency: invoice.currency,
             isRecurring: invoice.is_recurring,
-            recurringInterval: invoice.recurring_interval || "monthly",
+            recurringInterval: (invoice.recurring_interval as "weekly" | "monthly" | "quarterly" | "yearly") || "monthly",
             businessInfo: {
               name: invoice.business_name || "",
               email: invoice.business_email || "",
@@ -111,6 +126,14 @@ const ViewInvoice = () => {
 
           setInvoiceData(convertedData);
           setSelectedTemplate(invoice.template as InvoiceTemplate);
+          
+          // Pre-populate email data with client information
+          setEmailData(prev => ({
+            ...prev,
+            recipientEmail: invoice.client_email || "",
+            recipientName: invoice.client_name || "",
+            autoGenerateMessage: true,
+          }));
         } else {
           toast({
             title: "Error",
@@ -164,6 +187,69 @@ const ViewInvoice = () => {
     }
   };
 
+  const handleSendEmail = async () => {
+    if (!id) {
+      toast({
+        title: "Error",
+        description: "Invoice ID not found.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!emailData.recipientEmail) {
+      toast({
+        title: "Error",
+        description: "Recipient email is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      const response = await EmailService.sendInvoiceEmail({
+        invoiceId: id,
+        recipientEmail: emailData.recipientEmail,
+        recipientName: emailData.recipientName,
+        customMessage: emailData.customMessage,
+        ccOwner: emailData.ccOwner,
+        autoGenerateMessage: emailData.autoGenerateMessage,
+      });
+
+      if (response.success) {
+        toast({
+          title: "Success!",
+          description: "Invoice has been sent successfully.",
+        });
+        setIsEmailDialogOpen(false);
+        // Reset form
+        setEmailData({
+          recipientEmail: invoiceData.clientInfo.email || "",
+          recipientName: invoiceData.clientInfo.name || "",
+          customMessage: "",
+          ccOwner: true,
+          autoGenerateMessage: true,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.message || "Failed to send email.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Email sending error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to send email. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   const selectedCurrency = currencies.find(
     (c) => c.code === invoiceData.currency
   );
@@ -202,6 +288,123 @@ const ViewInvoice = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Mail className="h-4 w-4" />
+                Send Invoice
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Send className="h-5 w-5 text-primary" />
+                  Send Invoice via Email
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="recipientEmail">Recipient Email *</Label>
+                  <Input
+                    id="recipientEmail"
+                    type="email"
+                    value={emailData.recipientEmail}
+                    onChange={(e) => setEmailData(prev => ({ ...prev, recipientEmail: e.target.value }))}
+                    placeholder="client@example.com"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="recipientName">Recipient Name</Label>
+                  <Input
+                    id="recipientName"
+                    value={emailData.recipientName}
+                    onChange={(e) => setEmailData(prev => ({ ...prev, recipientName: e.target.value }))}
+                    placeholder="Client Name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="autoGenerateMessage"
+                      checked={emailData.autoGenerateMessage}
+                      onCheckedChange={(checked) => setEmailData(prev => ({ ...prev, autoGenerateMessage: checked as boolean }))}
+                    />
+                    <Label htmlFor="autoGenerateMessage" className="text-sm">
+                      Auto-generate professional message
+                    </Label>
+                  </div>
+                </div>
+
+                {!emailData.autoGenerateMessage && (
+                  <div className="space-y-2">
+                    <Label htmlFor="customMessage">Custom Message</Label>
+                    <Textarea
+                      id="customMessage"
+                      value={emailData.customMessage}
+                      onChange={(e) => setEmailData(prev => ({ ...prev, customMessage: e.target.value }))}
+                      placeholder="Add a personal message to your invoice..."
+                      rows={3}
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="ccOwner"
+                    checked={emailData.ccOwner}
+                    onCheckedChange={(checked) => setEmailData(prev => ({ ...prev, ccOwner: checked as boolean }))}
+                  />
+                  <Label htmlFor="ccOwner" className="text-sm">
+                    CC me (account owner) on this email
+                  </Label>
+                </div>
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Auto-generated message will include:</strong>
+                  </p>
+                  <ul className="text-sm text-blue-700 mt-1 ml-4 list-disc">
+                    <li>Professional greeting</li>
+                    <li>Invoice details and due date</li>
+                    <li>Payment instructions</li>
+                    <li>Contact information</li>
+                  </ul>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEmailDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSendEmail}
+                    disabled={isSendingEmail || !emailData.recipientEmail}
+                    className="bg-primary-gradient hover:opacity-90"
+                  >
+                    {isSendingEmail ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-background border-t-transparent mr-2" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Send Invoice
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <Button
             onClick={handleGeneratePDF}
             disabled={isGenerating}
@@ -236,7 +439,6 @@ const ViewInvoice = () => {
                 ref={invoicePreviewRef}
                 invoiceData={invoiceData}
                 template={selectedTemplate}
-                currency={selectedCurrency}
               />
             </div>
           </CardContent>

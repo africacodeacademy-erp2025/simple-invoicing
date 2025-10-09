@@ -85,8 +85,8 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: "http://localhost:8080?success=true",
-      cancel_url: "http://localhost:8080?canceled=true",
+      success_url: `${Deno.env.get("SITE_URL") || "http://localhost:8080"}?success=true`,
+      cancel_url: `${Deno.env.get("SITE_URL") || "http://localhost:8080"}?canceled=true`,
       customer_email: user.email, // optional but nice touch
     });
 
