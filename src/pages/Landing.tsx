@@ -14,6 +14,8 @@ import {
   Clock,
   Globe,
 } from "lucide-react";
+import PricingPlans from "@/components/PricingPlans";
+import { CardHeader, CardTitle } from "@/components/ui/card";
 
 const Landing = () => {
   const features = [
@@ -196,6 +198,17 @@ const Landing = () => {
               <div className="text-muted-foreground">Uptime</div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="py-20 bg-muted/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Simple pricing</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Choose the plan that fits your stage. Start free, upgrade as you grow.</p>
+          </div>
+          <PricingPlans />
         </div>
       </section>
 

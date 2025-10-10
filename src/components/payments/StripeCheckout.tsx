@@ -1,35 +1,17 @@
 import { useState } from "react";
-import { loadStripe } from "@stripe/stripe-js";
-import { supabase } from "@/lib/supabase"; // 👈 make sure this points to your Supabase client
+import { supabase } from "@/lib/supabase";
 
-// Load Stripe publishable key from environment variables
-const stripePromise = loadStripe(
-  import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ""
-);
-
-export default function StripeCheckout({
-  amount,
-  description,
-}: {
-  amount: number;
-  description: string;
-}) {
+export default function StripeCheckout({ priceId }: { priceId: string }) {
   const [loading, setLoading] = useState(false);
 
   const handleCheckout = async () => {
     setLoading(true);
     try {
-      // ✅ Get user session from Supabase
       const {
         data: { session },
-        error,
       } = await supabase.auth.getSession();
+      if (!session) throw new Error("User not logged in");
 
-      if (error || !session) {
-        throw new Error("User not logged in or no session found");
-      }
-
-      // ✅ Call Supabase Edge Function with authorization header
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const response = await fetch(
         `${supabaseUrl}/functions/v1/create-stripe-session`,
@@ -37,28 +19,21 @@ export default function StripeCheckout({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`, // 👈 send the user's token
+            Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({ amount, description }),
+          body: JSON.stringify({ priceId, mode: "subscription" }),
         }
       );
-
       if (!response.ok) {
         const text = await response.text();
-        console.error("Backend error:", text);
-        throw new Error(`HTTP ${response.status}`);
+        throw new Error(text || "Failed to create checkout session");
       }
-
       const data = await response.json();
-      if (!data.url) {
-        throw new Error("No URL returned from backend");
-      }
-
-      // ✅ Redirect to Stripe-hosted Checkout
+      if (!data.url) throw new Error("No checkout URL returned");
       window.location.href = data.url;
     } catch (err) {
       console.error("Checkout failed:", err);
-      alert("Checkout failed: " + err.message);
+      alert("Checkout failed: " + (err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -70,7 +45,7 @@ export default function StripeCheckout({
       disabled={loading}
       className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
     >
-      {loading ? "Redirecting..." : "Pay with Stripe"}
+      {loading ? "Redirecting..." : "Subscribe"}
     </button>
   );
 }

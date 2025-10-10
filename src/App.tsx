@@ -18,6 +18,7 @@ import Invoices from "./pages/Invoices";
 import Clients from "./pages/Clients";
 import Templates from "./pages/Templates";
 import Profile from "./pages/Profile";
+import Billing from "./pages/Billing";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="clients" element={<Clients />} />
               <Route path="templates" element={<Templates />} />
               <Route path="profile" element={<Profile />} />
+              <Route path="billing" element={<Billing />} />
             </Route>
 
             {/* Legacy Routes - Redirect to new /app/* */}

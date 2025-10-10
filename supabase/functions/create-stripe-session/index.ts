@@ -61,33 +61,57 @@ serve(async (req) => {
       );
     }
 
-    // ✅ Step 3: Parse body
-    const { amount, description } = await req.json();
+    // ✅ Step 3: Parse body for subscription checkout
+    const { priceId, mode } = await req.json();
 
-    if (!amount || amount <= 0) {
+    if (!priceId || typeof priceId !== "string") {
       return new Response(
-        JSON.stringify({ error: "Invalid amount" }),
+        JSON.stringify({ error: "Missing priceId (expected a Stripe price_*)" }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
+    if (!priceId.startsWith("price_")) {
+      return new Response(
+        JSON.stringify({ error: "Invalid priceId. Ensure you set a real Stripe price_ ID in your env." }),
         { status: 400, headers: corsHeaders }
       );
     }
 
-    // ✅ Step 4: Create Stripe Checkout Session
+    const siteUrl = Deno.env.get("SITE_URL") || "http://localhost:8080";
+
+    // ✅ Ensure Stripe customer exists and persist id on profile
+    // Try to find existing customer by email
+    const existingCustomers = await stripe.customers.list({ email: user.email || undefined, limit: 1 });
+    let customerId = existingCustomers.data[0]?.id;
+    if (!customerId) {
+      const created = await stripe.customers.create({
+        email: user.email || undefined,
+        metadata: { supabase_user_id: user.id },
+      });
+      customerId = created.id;
+    }
+
+    // Upsert stripe_customer_id in Supabase
+    await supabase
+      .from("user_profiles")
+      .upsert({ user_id: user.id, stripe_customer_id: customerId, email: user.email || null, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+
+    // ✅ Create Stripe Checkout Session for subscription
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: { name: description || "Premium Template" },
-            unit_amount: amount, // amount in cents
-          },
-          quantity: 1,
+      mode: (mode as "subscription" | "payment") || "subscription",
+      line_items: [{ price: priceId, quantity: 1 }],
+      customer: customerId,
+      allow_promotion_codes: true,
+      success_url: `${siteUrl}/?checkout=success`,
+      cancel_url: `${siteUrl}/?checkout=cancel`,
+      subscription_data: {
+        metadata: {
+          supabase_user_id: user.id,
         },
-      ],
-      mode: "payment",
-      success_url: `${Deno.env.get("SITE_URL") || "http://localhost:8080"}?success=true`,
-      cancel_url: `${Deno.env.get("SITE_URL") || "http://localhost:8080"}?canceled=true`,
-      customer_email: user.email, // optional but nice touch
+      },
+      metadata: {
+        supabase_user_id: user.id,
+      },
     });
 
     // ✅ Step 5: Return session URL to frontend

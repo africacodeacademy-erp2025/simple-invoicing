@@ -52,6 +52,11 @@ const navigationItems = [
     icon: Layout,
   },
   {
+    title: "Billing",
+    url: "/app/billing",
+    icon: FileText,
+  },
+  {
     title: "Profile",
     url: "/app/profile",
     icon: User,

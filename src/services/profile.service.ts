@@ -17,6 +17,18 @@ export interface UserProfile {
   swift_code?: string;
   iban?: string;
   logo_url?: string;
+  // Billing/subscription fields
+  plan?: "free" | "pro" | "business" | "enterprise";
+  subscription_status?:
+    | "trialing"
+    | "active"
+    | "past_due"
+    | "canceled"
+    | "unpaid"
+    | null;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+  current_period_end?: string | null; // ISO timestamp
   created_at?: string;
   updated_at?: string;
 }

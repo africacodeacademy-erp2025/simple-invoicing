@@ -75,6 +75,12 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     swift_code TEXT,
     iban TEXT,
     logo_url TEXT,
+    -- Subscription fields
+    plan TEXT DEFAULT 'free',
+    subscription_status TEXT,
+    stripe_customer_id TEXT,
+    stripe_subscription_id TEXT,
+    current_period_end TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT now(),
     updated_at TIMESTAMPTZ DEFAULT now()
 );

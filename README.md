@@ -1,3 +1,33 @@
+## Stripe Subscriptions
+
+Environment variables required in `.env.local`:
+
+```
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+SITE_URL=http://localhost:5173
+
+# Stripe Price IDs
+VITE_STRIPE_PRICE_PRO_MONTHLY=price_...
+VITE_STRIPE_PRICE_BUSINESS_MONTHLY=price_...
+VITE_STRIPE_PRICE_ENTERPRISE_MONTHLY=price_...
+# Optional yearly prices
+VITE_STRIPE_PRICE_PRO_YEARLY=price_...
+VITE_STRIPE_PRICE_BUSINESS_YEARLY=price_...
+VITE_STRIPE_PRICE_ENTERPRISE_YEARLY=price_...
+```
+
+Edge Functions used:
+
+- `create-stripe-session`: creates a Checkout Session for subscriptions given a `priceId`.
+- `stripe-webhook`: processes subscription lifecycle events to update `user_profiles` with `plan`, `subscription_status`, and `current_period_end`.
+
+Frontend:
+
+- `src/components/PricingPlans.tsx` renders plan cards and starts checkout.
+- `src/pages/Templates.tsx` checks `profile.plan` to gate premium templates and link to upgrade.
+
 # Easy Charge Pro
 
 A modern, AI-powered invoice management application that helps businesses create professional invoices quickly and efficiently. Generate invoices from natural language descriptions using advanced AI technology.

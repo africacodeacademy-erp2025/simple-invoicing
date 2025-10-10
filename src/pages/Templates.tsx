@@ -32,10 +32,12 @@ import { toast } from "@/hooks/use-toast";
 import { TemplateController } from "@/controllers/template.controller";
 import { InvoiceTemplate } from "@/services/template.service";
 import { useAuth } from "@/contexts/AuthContext";
-import StripeCheckout from "@/components/payments/StripeCheckout";
+import { useProfile } from "@/hooks/useProfile";
+import { BillingService } from "@/services/billing.service";
 
 export default function Templates() {
   const { user } = useAuth();
+  const { profile } = useProfile(user?.id ?? null);
   const [templates, setTemplates] = useState<InvoiceTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,8 +49,9 @@ export default function Templates() {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  // Basic check for pro plan
-  const isProUser = user?.subscription_plan === "pro";
+  // Determine access by plan from profile
+  const plan = (profile?.plan || "free").toLowerCase();
+  const isProUser = ["pro", "business", "enterprise"].includes(plan);
 
   useEffect(() => {
     loadTemplates();
@@ -309,10 +312,16 @@ export default function Templates() {
             <p className="text-muted-foreground mt-2">
               This template is part of our Pro plan. Pay to unlock this and other premium templates, plus get access to all pro features.
             </p>
-            <StripeCheckout
-              amount={100} // $1.00 in cents for test
-              description={`Unlock the "${selectedTemplate?.name}" Template`}
-            />
+            <Button
+              className="mt-4 w-full"
+              onClick={() =>
+                BillingService.startCheckout(
+                  import.meta.env.VITE_STRIPE_PRICE_PRO_MONTHLY || ""
+                )
+              }
+            >
+              Upgrade to Pro
+            </Button>
             <Button
               variant="ghost"
               className="mt-2 w-full"
