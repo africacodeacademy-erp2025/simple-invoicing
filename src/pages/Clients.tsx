@@ -52,6 +52,10 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { ClientController } from "@/controllers/client.controller";
 import { Client } from "@/services/client.service";
+// ADD THESE IMPORTS
+import { usePlanAccess } from "@/hooks/usePlanAccess";
+import { PaywallModal } from "@/components/PaywallModal";
+import { ProtectedClientController } from "@/controllers/client.controller.protected";
 
 export default function Clients() {
   const { user } = useAuth();
@@ -69,6 +73,12 @@ export default function Clients() {
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
+  // ADD THESE STATE VARIABLES FOR PAYWALL
+  const [showPaywall, setShowPaywall] = useState(false);
+
+  // ADD THIS: Get plan access hook
+  const { planLimits, profile } = usePlanAccess();
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -85,12 +95,10 @@ export default function Clients() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedClients = filteredClients.slice(startIndex, endIndex);
 
-  // Reset to first page when search term changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Load clients from Supabase
   const loadClients = useCallback(async () => {
     if (!user?.id) return;
 
@@ -118,12 +126,10 @@ export default function Clients() {
     }
   }, [user?.id]);
 
-  // Load clients on component mount
   useEffect(() => {
     loadClients();
   }, [user?.id, loadClients]);
 
-  // Form validation
   const validateForm = () => {
     const errors: Record<string, string> = {};
 
@@ -145,13 +151,42 @@ export default function Clients() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (formErrors[field]) {
       setFormErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
-  const handleAddClient = () => {
+  // UPDATED: Check limit before opening dialog
+  const handleAddClient = async () => {
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to add clients.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // CHECK IF USER CAN ADD MORE CLIENTS
+    const limitCheck = await ProtectedClientController.canCreateClient(
+      user.id,
+      profile?.plan
+    );
+
+    if (!limitCheck.success) {
+      toast({
+        title: "Limit Reached",
+        description: limitCheck.error,
+        variant: "destructive",
+      });
+
+      if (limitCheck.code === "LIMIT_REACHED") {
+        setShowPaywall(true);
+      }
+      return;
+    }
+
+    // If check passes, open the dialog
     setEditingClient(null);
     setFormData({ name: "", email: "", address: "" });
     setFormErrors({});
@@ -169,6 +204,7 @@ export default function Clients() {
     setIsDialogOpen(true);
   };
 
+  // UPDATED: Use protected controller for creation
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -189,7 +225,7 @@ export default function Clients() {
 
     try {
       if (editingClient) {
-        // Update existing client
+        // Update existing client (no limit check needed for updates)
         const response = await ClientController.updateClient(
           editingClient.id!,
           user.id,
@@ -201,7 +237,6 @@ export default function Clients() {
             title: "Client Updated",
             description: "Client information has been updated successfully.",
           });
-          // Reload clients to get updated data
           await loadClients();
         } else {
           if (response.errors && response.errors.length > 0) {
@@ -221,17 +256,38 @@ export default function Clients() {
           return;
         }
       } else {
-        // Add new client
-        const response = await ClientController.createClient(user.id, formData);
+        // Add new client - USE PROTECTED CONTROLLER
+        const response = await ProtectedClientController.createClient(
+          user.id,
+          formData
+        );
 
         if (response.success) {
           toast({
             title: "Client Added",
             description: "New client has been added successfully.",
           });
-          // Reload clients to get updated data
           await loadClients();
         } else {
+          // Handle specific error codes
+          if (response.code === "LIMIT_REACHED") {
+            toast({
+              title: "Limit Reached",
+              description: response.error,
+              variant: "destructive",
+            });
+            setShowPaywall(true);
+            return;
+          } else if (response.code === "SUBSCRIPTION_EXPIRED") {
+            toast({
+              title: "Subscription Expired",
+              description: response.error,
+              variant: "destructive",
+            });
+            return;
+          }
+
+          // Handle validation errors
           if (response.errors && response.errors.length > 0) {
             const firstError = response.errors[0];
             toast({
@@ -242,7 +298,7 @@ export default function Clients() {
           } else {
             toast({
               title: "Error",
-              description: response.message,
+              description: response.error || "Failed to create client",
               variant: "destructive",
             });
           }
@@ -284,7 +340,6 @@ export default function Clients() {
           description: "Client has been deleted successfully.",
           variant: "destructive",
         });
-        // Reload clients to get updated data
         await loadClients();
       } else {
         toast({
@@ -311,6 +366,10 @@ export default function Clients() {
           <h1 className="text-3xl font-bold text-foreground">Clients</h1>
           <p className="text-muted-foreground mt-2">
             Manage your client information and contact details.
+          </p>
+          {/* ADD THIS: Show current usage */}
+          <p className="text-xs text-muted-foreground mt-2">
+            {clients.length} / {planLimits.maxClients === Infinity ? '∞' : planLimits.maxClients} clients
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -659,6 +718,15 @@ export default function Clients() {
           </div>
         )}
       </Card>
+
+      {/* ADD THIS: Paywall Modal */}
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        feature="Additional Clients"
+        requiredPlan="pro"
+        description={`You've reached your limit of ${planLimits.maxClients} clients. Upgrade to Pro to add up to 50 clients, or Business for unlimited clients.`}
+      />
     </div>
   );
 }

@@ -14,6 +14,10 @@ import { useProfile } from "@/hooks/useProfile";
 import { InvoiceController } from "@/controllers/invoice.controller";
 import { Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+// ADD THESE IMPORTS
+import { usePlanAccess } from "@/hooks/usePlanAccess";
+import { PaywallModal } from "@/components/PaywallModal";
+import { ProtectedInvoiceController } from "@/controllers/invoice.controller.protected";
 
 const CreateInvoice = () => {
   const [showPreview, setShowPreview] = useState(true);
@@ -24,6 +28,11 @@ const CreateInvoice = () => {
   );
   const invoicePreviewRef = useRef<HTMLDivElement>(null);
 
+  // ADD THESE STATE VARIABLES FOR PAYWALL
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [paywallFeature, setPaywallFeature] = useState('');
+  const [paywallPlan, setPaywallPlan] = useState<'pro' | 'business' | 'enterprise'>('pro');
+
   // Get user and profile data
   const { user } = useAuth();
   const { profile, profileLoading, refreshProfile } = useProfile(
@@ -31,13 +40,16 @@ const CreateInvoice = () => {
   );
   const navigate = useNavigate();
 
+  // ADD THIS: Get plan access hook
+  const { canExportPDF, canUseRecurring, planLimits } = usePlanAccess();
+
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     invoiceNumber: "",
     date: new Date().toISOString().split("T")[0],
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       .toISOString()
-      .split("T")[0], // 30 days from now
-    currency: "", // Will be set from profile or default to USD
+      .split("T")[0],
+    currency: "",
     isRecurring: false,
     recurringInterval: "monthly",
     businessInfo: {
@@ -68,7 +80,6 @@ const CreateInvoice = () => {
     total: 0,
   });
 
-  // Calculate totals whenever line items, tax, or discount change
   const calculateTotals = useCallback((data: InvoiceData) => {
     const subtotal = data.lineItems.reduce((sum, item) => sum + item.amount, 0);
     const discountAmount = (subtotal * data.discountRate) / 100;
@@ -93,7 +104,6 @@ const CreateInvoice = () => {
     [calculateTotals]
   );
 
-  // Recalculate totals when relevant data changes
   useEffect(() => {
     const dataWithTotals = calculateTotals(invoiceData);
     if (dataWithTotals.total !== invoiceData.total) {
@@ -106,33 +116,26 @@ const CreateInvoice = () => {
     calculateTotals,
   ]);
 
-  // Generate invoice number with prefix
   const generateInvoiceNumber = useCallback((prefix?: string) => {
     const basePrefix = prefix || "INV";
-    const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
+    const timestamp = Date.now().toString().slice(-6);
     return `${basePrefix}-${timestamp}`;
   }, []);
 
-  // Prefill business information from user profile (only if fields are empty)
   useEffect(() => {
     if (profile && !profileLoading) {
       setInvoiceData((prevData) => {
-        // Only prefill if the current business info is empty
         const hasExistingData =
           prevData.businessInfo.name ||
           prevData.businessInfo.email ||
           prevData.businessInfo.phone ||
           prevData.businessInfo.address;
 
-        // Generate invoice number with profile prefix if available
         const invoiceNumber =
           prevData.invoiceNumber ||
           generateInvoiceNumber(profile.invoice_prefix);
 
-        // Set currency from profile or default to USD
         const currency = profile.default_currency || "USD";
-
-        // Set tax rate from profile if available
         const taxRate = profile.default_tax_rate || 0;
 
         if (hasExistingData) {
@@ -141,7 +144,7 @@ const CreateInvoice = () => {
             invoiceNumber,
             currency,
             taxRate,
-          }; // Don't overwrite existing business data, but update invoice number, currency, and tax rate
+          };
         }
 
         return {
@@ -170,7 +173,6 @@ const CreateInvoice = () => {
     }
   }, [profile, profileLoading, generateInvoiceNumber]);
 
-  // Function to manually prefill from profile
   const handlePrefillFromProfile = () => {
     if (profile) {
       setInvoiceData((prevData) => ({
@@ -203,7 +205,21 @@ const CreateInvoice = () => {
     }
   };
 
+  // UPDATED: Add PDF export protection
   const handleGeneratePDF = async () => {
+    // CHECK PERMISSION FIRST
+    if (!canExportPDF) {
+      toast({
+        title: "Premium Feature",
+        description: "PDF export requires a Pro plan or higher",
+        variant: "destructive",
+      });
+      setPaywallFeature("PDF Export");
+      setPaywallPlan("pro");
+      setShowPaywall(true);
+      return;
+    }
+
     if (!invoicePreviewRef.current) {
       toast({
         title: "Error",
@@ -242,6 +258,7 @@ const CreateInvoice = () => {
     }
   };
 
+  // UPDATED: Add invoice creation protection
   const handleCreateInvoice = async () => {
     if (!user?.id) {
       toast({
@@ -249,6 +266,42 @@ const CreateInvoice = () => {
         description: "You must be logged in to create invoices.",
         variant: "destructive",
       });
+      return;
+    }
+
+    // CHECK RECURRING PERMISSION
+    if (invoiceData.isRecurring && !canUseRecurring) {
+      toast({
+        title: "Premium Feature",
+        description: "Recurring invoices require a Pro plan or higher",
+        variant: "destructive",
+      });
+      setPaywallFeature("Recurring Invoices");
+      setPaywallPlan("pro");
+      setShowPaywall(true);
+      return;
+    }
+
+    // CHECK MONTHLY LIMIT
+    const limitCheck = await ProtectedInvoiceController.canCreateInvoice(
+      user.id,
+      profile?.plan
+    );
+
+    if (!limitCheck.success) {
+      toast({
+        title: "Limit Reached",
+        description: limitCheck.error,
+        variant: "destructive",
+      });
+
+      if (limitCheck.code === "LIMIT_REACHED") {
+        setPaywallFeature("Unlimited Invoices");
+        setPaywallPlan(limitCheck.upgradeRequired || "pro");
+        setShowPaywall(true);
+      } else if (limitCheck.code === "SUBSCRIPTION_EXPIRED") {
+        navigate("/app/billing");
+      }
       return;
     }
 
@@ -266,7 +319,6 @@ const CreateInvoice = () => {
           description: "Invoice created successfully.",
         });
 
-        // Navigate to the view invoice page
         if (response.data?.id) {
           navigate(`/app/view-invoice/${response.data.id}`);
         }
@@ -316,6 +368,12 @@ const CreateInvoice = () => {
               Loading your business profile...
             </p>
           )}
+          {/* ADD THIS: Show current usage */}
+          {planLimits.maxInvoicesPerMonth !== Infinity && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Plan limit: {planLimits.maxInvoicesPerMonth} invoices/month
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -357,10 +415,11 @@ const CreateInvoice = () => {
             )}
           </Button>
 
+          {/* UPDATED: Show lock icon if PDF export is locked */}
           <Button
             onClick={handleGeneratePDF}
             disabled={isGenerating}
-            className="bg-primary-gradient hover:opacity-90 transition-opacity"
+            className="bg-primary-gradient hover:opacity-90 transition-opacity relative"
           >
             {isGenerating ? (
               <>
@@ -371,6 +430,11 @@ const CreateInvoice = () => {
               <>
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
+                {!canExportPDF && (
+                  <span className="ml-2 text-xs px-1.5 py-0.5 bg-yellow-400 text-yellow-900 rounded">
+                    Pro
+                  </span>
+                )}
               </>
             )}
           </Button>
@@ -438,6 +502,14 @@ const CreateInvoice = () => {
           </div>
         </div>
       </div>
+
+      {/* ADD THIS: Paywall Modal */}
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        feature={paywallFeature}
+        requiredPlan={paywallPlan}
+      />
     </div>
   );
 };
