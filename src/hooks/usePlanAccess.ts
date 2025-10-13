@@ -3,15 +3,11 @@
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
-import { PlanAccessService, AccessCheckResult, PlanLimits } from '@/services/planAccess.service';
+import { PlanAccessService, AccessCheckResult, PlanLimits, PLAN_LIMITS } from '@/services/planAccess.service';
 
 export function usePlanAccess() {
   const { user } = useAuth();
-  const { profile } = useProfile(user?.id ?? null);
-
-  const planLimits = useMemo(() => {
-    return PlanAccessService.getPlanLimits(profile?.plan);
-  }, [profile?.plan]);
+  const { profile, profileLoading } = useProfile(user?.id ?? null);
 
   const isSubscriptionActive = useMemo(() => {
     return PlanAccessService.isSubscriptionActive(
@@ -19,6 +15,26 @@ export function usePlanAccess() {
       profile?.current_period_end
     );
   }, [profile?.subscription_status, profile?.current_period_end]);
+
+  const hasPremiumAccess = useMemo(() => {
+    if (profileLoading) return false;
+    const normalizedPlan = PlanAccessService.normalizePlan(profile?.plan);
+    if (normalizedPlan === 'free' || normalizedPlan === 'starter') return false;
+    return isSubscriptionActive;
+  }, [profile?.plan, isSubscriptionActive, profileLoading]);
+
+  const planLimits = useMemo(() => {
+    return PlanAccessService.getPlanLimits(profile?.plan);
+  }, [profile?.plan]);
+
+  const effectivePlanLimits: PlanLimits = useMemo(() => {
+    const normalized = PlanAccessService.normalizePlan(profile?.plan);
+    if (!hasPremiumAccess) {
+      // Fall back to free limits when subscription is not active
+      return PLAN_LIMITS['free'];
+    }
+    return PLAN_LIMITS[normalized];
+  }, [profile?.plan, hasPremiumAccess]);
 
   const checkFeatureAccess = (feature: keyof PlanLimits): AccessCheckResult => {
     return PlanAccessService.canAccessFeature(profile?.plan, feature);
@@ -54,7 +70,9 @@ export function usePlanAccess() {
 
   return {
     profile,
+    profileLoading,
     planLimits,
+    effectivePlanLimits,
     isSubscriptionActive,
     checkFeatureAccess,
     requireUpgrade,
@@ -62,7 +80,12 @@ export function usePlanAccess() {
     canUseAI,
     canExportPDF,
     canUseRecurring,
+    // Effective permissions require active paid subscription when feature is premium
+    canUseAIEffective: canUseAI && hasPremiumAccess,
+    canExportPDFEffective: canExportPDF && hasPremiumAccess,
+    canUseRecurringEffective: canUseRecurring && hasPremiumAccess,
     canUseCustomBranding,
+    hasPremiumAccess,
     isPro: profile?.plan?.toLowerCase().includes('pro'),
     isBusiness: profile?.plan?.toLowerCase().includes('business'),
     isEnterprise: profile?.plan?.toLowerCase().includes('enterprise'),

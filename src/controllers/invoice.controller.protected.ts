@@ -13,7 +13,7 @@ export class ProtectedInvoiceController {
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('invoices')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
@@ -25,7 +25,7 @@ export class ProtectedInvoiceController {
       return 0;
     }
 
-    return data?.length || 0;
+    return count ?? 0;
   }
 
   /**

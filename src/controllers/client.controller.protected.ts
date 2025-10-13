@@ -9,7 +9,7 @@ export class ProtectedClientController {
    * Get total client count for a user
    */
   static async getClientCount(userId: string): Promise<number> {
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('clients')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId);
@@ -19,7 +19,7 @@ export class ProtectedClientController {
       return 0;
     }
 
-    return data?.length || 0;
+    return count ?? 0;
   }
 
   /**

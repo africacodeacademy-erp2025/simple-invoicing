@@ -41,7 +41,7 @@ const CreateInvoice = () => {
   const navigate = useNavigate();
 
   // ADD THIS: Get plan access hook
-  const { canExportPDF, canUseRecurring, planLimits } = usePlanAccess();
+  const { canExportPDFEffective, canUseRecurringEffective, effectivePlanLimits } = usePlanAccess();
 
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     invoiceNumber: "",
@@ -208,7 +208,7 @@ const CreateInvoice = () => {
   // UPDATED: Add PDF export protection
   const handleGeneratePDF = async () => {
     // CHECK PERMISSION FIRST
-    if (!canExportPDF) {
+    if (!canExportPDFEffective) {
       toast({
         title: "Premium Feature",
         description: "PDF export requires a Pro plan or higher",
@@ -270,7 +270,7 @@ const CreateInvoice = () => {
     }
 
     // CHECK RECURRING PERMISSION
-    if (invoiceData.isRecurring && !canUseRecurring) {
+    if (invoiceData.isRecurring && !canUseRecurringEffective) {
       toast({
         title: "Premium Feature",
         description: "Recurring invoices require a Pro plan or higher",
@@ -369,9 +369,9 @@ const CreateInvoice = () => {
             </p>
           )}
           {/* ADD THIS: Show current usage */}
-          {planLimits.maxInvoicesPerMonth !== Infinity && (
+          {effectivePlanLimits.maxInvoicesPerMonth !== Infinity && (
             <p className="text-xs text-muted-foreground mt-2">
-              Plan limit: {planLimits.maxInvoicesPerMonth} invoices/month
+              Plan limit: {effectivePlanLimits.maxInvoicesPerMonth} invoices/month
             </p>
           )}
         </div>
@@ -430,7 +430,7 @@ const CreateInvoice = () => {
               <>
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
-                {!canExportPDF && (
+                {!canExportPDFEffective && (
                   <span className="ml-2 text-xs px-1.5 py-0.5 bg-yellow-400 text-yellow-900 rounded">
                     Pro
                   </span>

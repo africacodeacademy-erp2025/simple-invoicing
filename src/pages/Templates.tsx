@@ -33,11 +33,13 @@ import { TemplateController } from "@/controllers/template.controller";
 import { InvoiceTemplate } from "@/services/template.service";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
+import { usePlanAccess } from "@/hooks/usePlanAccess";
 import { BillingService } from "@/services/billing.service";
 
 export default function Templates() {
   const { user } = useAuth();
   const { profile } = useProfile(user?.id ?? null);
+  const { hasPremiumAccess } = usePlanAccess();
   const [templates, setTemplates] = useState<InvoiceTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,7 +53,7 @@ export default function Templates() {
 
   // Determine access by plan from profile
   const plan = (profile?.plan || "free").toLowerCase();
-  const isProUser = ["pro", "business", "enterprise"].includes(plan);
+  const isProUser = hasPremiumAccess;
 
   useEffect(() => {
     loadTemplates();

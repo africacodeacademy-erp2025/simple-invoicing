@@ -16,6 +16,9 @@ import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { InvoiceController } from "@/controllers/invoice.controller";
 import { EmailService } from "@/services/email.service";
+import { usePlanAccess } from "@/hooks/usePlanAccess";
+import { PaywallModal } from "@/components/PaywallModal";
+import { ProtectedInvoiceController } from "@/controllers/invoice.controller.protected";
 
 const ViewInvoice = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +27,7 @@ const ViewInvoice = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const [emailData, setEmailData] = useState({
     recipientEmail: "",
     recipientName: "",
@@ -35,6 +39,7 @@ const ViewInvoice = () => {
 
   // Get user data
   const { user } = useAuth();
+  const { canExportPDFEffective } = usePlanAccess();
 
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     invoiceNumber: "",
@@ -159,6 +164,18 @@ const ViewInvoice = () => {
   }, [id, user?.id, navigate]);
 
   const handleGeneratePDF = async () => {
+    // Double-check permission server-side as defense-in-depth
+    if (!user?.id) {
+      toast({ title: "Error", description: "You must be logged in.", variant: "destructive" });
+      return;
+    }
+    const access = await ProtectedInvoiceController.canExportPDF(user.id);
+    if (!access.success) {
+      toast({ title: "Premium Feature", description: access.error || "PDF export requires a Pro plan or higher", variant: "destructive" });
+      setShowPaywall(true);
+      return;
+    }
+
     if (!invoicePreviewRef.current) {
       toast({
         title: "Error",
@@ -406,8 +423,15 @@ const ViewInvoice = () => {
           </Dialog>
 
           <Button
-            onClick={handleGeneratePDF}
-            disabled={isGenerating}
+            onClick={() => {
+              if (!canExportPDFEffective) {
+                toast({ title: "Premium Feature", description: "PDF export requires a Pro plan or higher", variant: "destructive" });
+                setShowPaywall(true);
+                return;
+              }
+              void handleGeneratePDF();
+            }}
+            disabled={isGenerating || !canExportPDFEffective}
             className="bg-primary-gradient hover:opacity-90 transition-opacity"
           >
             {isGenerating ? (
@@ -419,6 +443,9 @@ const ViewInvoice = () => {
               <>
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
+                {!canExportPDFEffective && (
+                  <span className="ml-2 text-xs px-1.5 py-0.5 bg-yellow-400 text-yellow-900 rounded">Pro</span>
+                )}
               </>
             )}
           </Button>
@@ -529,6 +556,14 @@ const ViewInvoice = () => {
           )}
         </CardContent>
       </Card>
+      {/* Paywall Modal */}
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        feature="PDF Export"
+        requiredPlan="pro"
+        description="PDF export is available on Pro plan and above. Upgrade to download and share invoices as PDFs."
+      />
     </div>
   );
 };

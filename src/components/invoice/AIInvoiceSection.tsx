@@ -18,11 +18,11 @@ interface AIInvoiceSectionProps {
 export function AIInvoiceSection({ onGenerate, isGenerating }: AIInvoiceSectionProps) {
   const [prompt, setPrompt] = useState('');
   const [showPaywall, setShowPaywall] = useState(false);
-  const { canUseAI, requireUpgrade } = usePlanAccess();
+  const { canUseAIEffective, requireUpgrade } = usePlanAccess();
 
   const handleGenerate = async () => {
     // CRITICAL: Check access before allowing AI generation
-    if (!canUseAI) {
+    if (!canUseAIEffective) {
       const accessCheck = requireUpgrade('canUseAI');
       toast({
         title: 'Premium Feature',
@@ -53,7 +53,7 @@ export function AIInvoiceSection({ onGenerate, isGenerating }: AIInvoiceSectionP
   return (
     <>
       <Card className="relative overflow-hidden">
-        {!canUseAI && (
+        {!canUseAIEffective && (
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
             <div className="text-center space-y-3 p-6">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -80,7 +80,7 @@ export function AIInvoiceSection({ onGenerate, isGenerating }: AIInvoiceSectionP
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
             AI Invoice Generator
-            {!canUseAI && (
+            {!canUseAIEffective && (
               <span className="ml-auto text-xs px-2 py-1 bg-primary/10 text-primary rounded-full font-normal">
                 Pro Feature
               </span>
@@ -98,7 +98,7 @@ export function AIInvoiceSection({ onGenerate, isGenerating }: AIInvoiceSectionP
           />
           <Button
             onClick={handleGenerate}
-            disabled={!canUseAI || isGenerating || !prompt.trim()}
+            disabled={!canUseAIEffective || isGenerating || !prompt.trim()}
             className="w-full bg-primary-gradient"
           >
             {isGenerating ? (

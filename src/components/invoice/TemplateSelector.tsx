@@ -31,7 +31,7 @@ interface TemplateSelectorProps {
 }
 
 export function TemplateSelector({ selectedTemplate, onSelectTemplate }: TemplateSelectorProps) {
-  const { planLimits, profile } = usePlanAccess();
+  const { effectivePlanLimits, profile } = usePlanAccess();
   const [showPaywall, setShowPaywall] = useState(false);
   const [blockedTemplate, setBlockedTemplate] = useState<Template | null>(null);
 
@@ -52,7 +52,7 @@ export function TemplateSelector({ selectedTemplate, onSelectTemplate }: Templat
   };
 
   const canAccessTemplate = (template: Template) => {
-    return template.index < planLimits.maxTemplates;
+    return template.index < effectivePlanLimits.maxTemplates;
   };
 
   return (
@@ -61,7 +61,7 @@ export function TemplateSelector({ selectedTemplate, onSelectTemplate }: Templat
         <div>
           <h3 className="text-lg font-semibold mb-2">Choose a Template</h3>
           <p className="text-sm text-muted-foreground">
-            You have access to {planLimits.maxTemplates === Infinity ? 'all' : planLimits.maxTemplates} template{planLimits.maxTemplates !== 1 ? 's' : ''}
+            You have access to {effectivePlanLimits.maxTemplates === Infinity ? 'all' : effectivePlanLimits.maxTemplates} template{effectivePlanLimits.maxTemplates !== 1 ? 's' : ''}
           </p>
         </div>
 

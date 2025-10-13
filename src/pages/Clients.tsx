@@ -77,7 +77,7 @@ export default function Clients() {
   const [showPaywall, setShowPaywall] = useState(false);
 
   // ADD THIS: Get plan access hook
-  const { planLimits, profile } = usePlanAccess();
+  const { effectivePlanLimits, profile } = usePlanAccess();
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -369,7 +369,7 @@ export default function Clients() {
           </p>
           {/* ADD THIS: Show current usage */}
           <p className="text-xs text-muted-foreground mt-2">
-            {clients.length} / {planLimits.maxClients === Infinity ? '∞' : planLimits.maxClients} clients
+            {clients.length} / {effectivePlanLimits.maxClients === Infinity ? '∞' : effectivePlanLimits.maxClients} clients
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -725,7 +725,7 @@ export default function Clients() {
         onClose={() => setShowPaywall(false)}
         feature="Additional Clients"
         requiredPlan="pro"
-        description={`You've reached your limit of ${planLimits.maxClients} clients. Upgrade to Pro to add up to 50 clients, or Business for unlimited clients.`}
+        description={`You've reached your limit of ${effectivePlanLimits.maxClients} clients. Upgrade to Pro to add up to 50 clients, or Business for unlimited clients.`}
       />
     </div>
   );
