@@ -1,13 +1,11 @@
-// src/components/invoice/TemplateSelector.tsx
-// Example of template selection with access control
 
-import React, { useState } from 'react';
+// src/components/invoice/TemplateSelector.tsx
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Lock, Check } from 'lucide-react';
 import { usePlanAccess } from '@/hooks/usePlanAccess';
 import { PaywallModal } from '@/components/PaywallModal';
-import { PlanAccessService } from '@/services/planAccess.service';
+import { PlanAccessService, AccessCheckResult, PlanTier } from '@/services/planAccess.service';
 
 interface Template {
   id: string;
@@ -31,28 +29,45 @@ interface TemplateSelectorProps {
 }
 
 export function TemplateSelector({ selectedTemplate, onSelectTemplate }: TemplateSelectorProps) {
-  const { effectivePlanLimits, profile } = usePlanAccess();
+  const { profile } = usePlanAccess();
   const [showPaywall, setShowPaywall] = useState(false);
   const [blockedTemplate, setBlockedTemplate] = useState<Template | null>(null);
+  const [templateAccess, setTemplateAccess] = useState<Record<string, boolean>>({});
+  const [maxTemplates, setMaxTemplates] = useState(1);
+  const [requiredPlan, setRequiredPlan] = useState<PlanTier>('pro');
 
-  const handleTemplateClick = (template: Template) => {
-    // Check if user can access this template
-    const accessCheck = PlanAccessService.canUseTemplate(
+  useEffect(() => {
+    const checkAccess = async () => {
+      const access: Record<string, boolean> = {};
+      let max = 1;
+      if (profile) {
+        const limits = await PlanAccessService.getPlanLimits(profile.plan);
+        max = limits.maxTemplates;
+        for (const template of TEMPLATES) {
+          const result = await PlanAccessService.canUseTemplate(profile.plan, template.index);
+          access[template.id] = result.allowed;
+        }
+      }
+      setTemplateAccess(access);
+      setMaxTemplates(max);
+    };
+    checkAccess();
+  }, [profile]);
+
+  const handleTemplateClick = async (template: Template) => {
+    const accessCheck = await PlanAccessService.canUseTemplate(
       profile?.plan,
       template.index
     );
 
     if (!accessCheck.allowed) {
       setBlockedTemplate(template);
+      setRequiredPlan(accessCheck.upgradeRequired || 'pro');
       setShowPaywall(true);
       return;
     }
 
     onSelectTemplate(template.id);
-  };
-
-  const canAccessTemplate = (template: Template) => {
-    return template.index < effectivePlanLimits.maxTemplates;
   };
 
   return (
@@ -61,13 +76,13 @@ export function TemplateSelector({ selectedTemplate, onSelectTemplate }: Templat
         <div>
           <h3 className="text-lg font-semibold mb-2">Choose a Template</h3>
           <p className="text-sm text-muted-foreground">
-            You have access to {effectivePlanLimits.maxTemplates === Infinity ? 'all' : effectivePlanLimits.maxTemplates} template{effectivePlanLimits.maxTemplates !== 1 ? 's' : ''}
+            You have access to {maxTemplates === Infinity ? 'all' : maxTemplates} template{maxTemplates !== 1 ? 's' : ''}
           </p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {TEMPLATES.map((template) => {
-            const hasAccess = canAccessTemplate(template);
+            const hasAccess = templateAccess[template.id] ?? false;
             const isSelected = selectedTemplate === template.id;
 
             return (
@@ -124,8 +139,8 @@ export function TemplateSelector({ selectedTemplate, onSelectTemplate }: Templat
             setBlockedTemplate(null);
           }}
           feature={`${blockedTemplate.name} Template`}
-          requiredPlan="pro"
-          description="Premium templates are available on Pro plan and above. Upgrade to access all professional invoice templates."
+          requiredPlan={requiredPlan}
+          description="Premium templates are available on higher-tier plans. Upgrade to access all professional invoice templates."
         />
       )}
     </>

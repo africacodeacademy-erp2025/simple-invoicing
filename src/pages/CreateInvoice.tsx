@@ -369,7 +369,7 @@ const CreateInvoice = () => {
             </p>
           )}
           {/* ADD THIS: Show current usage */}
-          {effectivePlanLimits.maxInvoicesPerMonth !== Infinity && (
+          {effectivePlanLimits && effectivePlanLimits.maxInvoicesPerMonth !== Infinity && (
             <p className="text-xs text-muted-foreground mt-2">
               Plan limit: {effectivePlanLimits.maxInvoicesPerMonth} invoices/month
             </p>
@@ -419,7 +419,7 @@ const CreateInvoice = () => {
           <Button
             onClick={handleGeneratePDF}
             disabled={isGenerating}
-            className="bg-primary-gradient hover:opacity-90 transition-opacity relative"
+            className="bg-primary hover:opacity-90 transition-opacity relative"
           >
             {isGenerating ? (
               <>

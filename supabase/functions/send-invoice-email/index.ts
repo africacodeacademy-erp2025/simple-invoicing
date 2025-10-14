@@ -1,15 +1,6 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "npm:resend@3.2.0";
-
-// Initialize Resend
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
-// Initialize Supabase Admin client
-const supabase = createClient(
-  Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-);
 
 // CORS headers
 const corsHeaders = {
@@ -34,41 +25,41 @@ serve(async (req) => {
   }
 
   try {
-    // Check Authorization header
+    // --- SUPABASE ADMIN SETUP ---
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // --- AUTHENTICATION ---
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
         JSON.stringify({ success: false, message: "Missing authorization header" }),
-        { status: 401, headers: corsHeaders }
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
     const token = authHeader.replace("Bearer ", "");
-
-    // Validate token with Supabase
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
       return new Response(
         JSON.stringify({ success: false, message: "Unauthorized" }),
-        { status: 401, headers: corsHeaders }
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Parse request body
+    // --- PARSE REQUEST BODY ---
     const { invoiceId, recipientEmail, recipientName, customMessage, ccOwner, autoGenerateMessage } = await req.json();
 
     if (!invoiceId || !recipientEmail) {
       return new Response(
-        JSON.stringify({ success: false, message: "Missing required fields" }),
-        { status: 400, headers: corsHeaders }
+        JSON.stringify({ success: false, message: "Missing required fields: invoiceId and recipientEmail are required." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Get invoice data
+    
+    // --- GET INVOICE AND PROFILE DATA ---
     const { data: invoice, error: invoiceError } = await supabase
       .from("invoices")
       .select("*")
@@ -78,75 +69,81 @@ serve(async (req) => {
 
     if (invoiceError || !invoice) {
       return new Response(
-        JSON.stringify({ success: false, message: "Invoice not found" }),
-        { status: 404, headers: corsHeaders }
+        JSON.stringify({ success: false, message: "Invoice not found or access denied." }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get user profile for owner email
     const { data: profile } = await supabase
       .from("user_profiles")
       .select("email")
       .eq("user_id", user.id)
       .single();
 
-    // Generate HTML email content
+    // --- EMAIL CONTENT ---
     const finalMessage = autoGenerateMessage ? generateAutoMessage(invoice, recipientName) : customMessage;
     const htmlContent = generateInvoiceEmailHTML(invoice, finalMessage);
 
-    // Prepare email recipients (Resend expects strings)
-    const to = recipientEmail as string;
-    const cc = ccOwner && profile?.email ? (profile.email as string) : undefined;
+    // --- SENDGRID PAYLOAD ---
+    const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
+    const sendgridFromEmail = Deno.env.get("SENDGRID_FROM_EMAIL");
+    
+    if (!sendgridApiKey || !sendgridFromEmail) {
+      console.error("Missing SendGrid environment variables");
+      return new Response(
+        JSON.stringify({ success: false, message: "Email service is not configured correctly." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Send email using Resend
-    const emailResult = await resend.emails.send({
-      from: "Easy Charge Pro <onboarding@resend.dev>",
-      to,
-      cc,
-      subject: `Invoice #${invoice.invoice_number} from ${invoice.business_name}`,
-      html: htmlContent,
+    const emailPayload = {
+      personalizations: [
+        {
+          to: [{ email: recipientEmail, name: recipientName }],
+          ...(ccOwner && profile?.email && { cc: [{ email: profile.email }] }),
+          subject: `Invoice #${invoice.invoice_number} from ${invoice.business_name}`
+        }
+      ],
+      from: { email: sendgridFromEmail, name: invoice.business_name || "Easy Charge Pro" },
+      content: [{ type: "text/html", value: htmlContent }],
+    };
+
+    // --- SEND EMAIL VIA SENDGRID ---
+    const sendgridResponse = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${sendgridApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(emailPayload),
     });
 
-    if (emailResult.error) {
-      console.error("Resend error:", emailResult.error);
+    if (!sendgridResponse.ok) {
+      const errorBody = await sendgridResponse.json();
+      console.error("SendGrid error:", errorBody);
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: "Failed to send email", 
-          error: emailResult.error.message 
-        }),
-        { status: 500, headers: corsHeaders }
+        JSON.stringify({ success: false, message: "Failed to send email.", error: errorBody }),
+        { status: sendgridResponse.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Email sent successfully",
-        emailId: emailResult.data?.id 
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ success: true, message: "Email sent successfully." }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (error) {
-    console.error("Send invoice email error:", error);
+    console.error("Global error:", error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        message: "Internal server error", 
-        error: (error as Error).message 
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ success: false, message: "Internal Server Error", error: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
 
-function generateInvoiceEmailHTML(invoice: any, customMessage?: string): string {
+// --- HELPER FUNCTIONS ---
+
+function generateInvoiceEmailHTML(invoice: any, message: string): string {
   const currencySymbol = getCurrencySymbol(invoice.currency);
   const formatCurrency = (amount: number) => `${currencySymbol}${amount.toFixed(2)}`;
   
@@ -158,78 +155,55 @@ function generateInvoiceEmailHTML(invoice: any, customMessage?: string): string 
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Invoice #${invoice.invoice_number}</title>
       <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: #fff; }
-        .header { background: #f8f9fa; padding: 20px; border-radius: 8px 8px 0 0; }
-        .content { padding: 20px; }
-        .invoice-details { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; }
-        .line-items { margin: 20px 0; }
-        .line-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
-        .totals { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0; }
-        .total-row { display: flex; justify-content: space-between; margin: 5px 0; }
-        .final-total { font-weight: bold; font-size: 1.2em; color: #2563eb; }
-        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f7; }
+        .container { max-width: 600px; margin: 20px auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+        .header { background: #4f46e5; color: #ffffff; padding: 24px; text-align: center; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .content { padding: 24px; }
+        .message-box { background-color: #f8f9fa; border: 1px solid #e2e8f0; border-radius: 4px; padding: 16px; margin-bottom: 24px; white-space: pre-wrap; }
+        .invoice-details, .totals { background: #f8f9fa; padding: 16px; border-radius: 8px; margin-bottom: 24px; }
+        .detail-row { display: flex; justify-content: space-between; padding: 8px 0; }
+        .line-items h3 { border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 16px; }
+        .line-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
+        .final-total { font-weight: bold; font-size: 1.2em; color: #4f46e5; border-top: 2px solid #e2e8f0; padding-top: 10px; margin-top: 10px; }
+        .footer { margin-top: 24px; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
-          <h1>Invoice #${invoice.invoice_number}</h1>
-          <p><strong>From:</strong> ${invoice.business_name}</p>
-          <p><strong>To:</strong> ${invoice.client_name}</p>
+          <h1>Invoice from ${invoice.business_name}</h1>
         </div>
-        
         <div class="content">
-          ${customMessage ? `<div class="custom-message"><p><strong>Message:</strong> ${customMessage}</p></div>` : ''}
-          
+          <div class="message-box">${message.replace(/\n/g, '<br>')}</div>
           <div class="invoice-details">
-            <p><strong>Issue Date:</strong> ${new Date(invoice.issue_date).toLocaleDateString()}</p>
-            <p><strong>Due Date:</strong> ${new Date(invoice.due_date).toLocaleDateString()}</p>
-            <p><strong>Currency:</strong> ${invoice.currency}</p>
+            <div class="detail-row"><span>Invoice Number:</span><strong>#${invoice.invoice_number}</strong></div>
+            <div class="detail-row"><span>Issue Date:</span><strong>${new Date(invoice.issue_date).toLocaleDateString()}</strong></div>
+            <div class="detail-row"><span>Due Date:</span><strong>${new Date(invoice.due_date).toLocaleDateString()}</strong></div>
           </div>
-
           <div class="line-items">
-            <h3>Line Items</h3>
+            <h3>Summary</h3>
             ${invoice.line_items.map((item: any) => `
               <div class="line-item">
                 <div>
                   <strong>${item.description}</strong><br>
                   <small>Qty: ${item.quantity} × ${formatCurrency(item.rate)}</small>
                 </div>
-                <div>${formatCurrency(item.amount)}</div>
+                <div><strong>${formatCurrency(item.amount)}</strong></div>
               </div>
             `).join('')}
           </div>
-
           <div class="totals">
-            <div class="total-row">
-              <span>Subtotal:</span>
-              <span>${formatCurrency(invoice.subtotal)}</span>
-            </div>
-            ${invoice.discount_rate > 0 ? `
-              <div class="total-row">
-                <span>Discount (${invoice.discount_rate}%):</span>
-                <span>-${formatCurrency(invoice.discount_amount)}</span>
-              </div>
-            ` : ''}
-            ${invoice.tax_rate > 0 ? `
-              <div class="total-row">
-                <span>Tax (${invoice.tax_rate}%):</span>
-                <span>${formatCurrency(invoice.tax_amount)}</span>
-              </div>
-            ` : ''}
-            <div class="total-row final-total">
-              <span>Total:</span>
-              <span>${formatCurrency(invoice.total)}</span>
-            </div>
+            <div class="detail-row"><span>Subtotal:</span><span>${formatCurrency(invoice.subtotal)}</span></div>
+            ${invoice.discount_rate > 0 ? `<div class="detail-row"><span>Discount (${invoice.discount_rate}%):</span><span>-${formatCurrency(invoice.discount_amount)}</span></div>` : ''}
+            ${invoice.tax_rate > 0 ? `<div class="detail-row"><span>Tax (${invoice.tax_rate}%):</span><span>${formatCurrency(invoice.tax_amount)}</span></div>` : ''}
+            <div class="detail-row final-total"><span>Total Amount Due:</span><span>${formatCurrency(invoice.total)}</span></div>
           </div>
-
-          ${invoice.notes ? `<div class="notes"><p><strong>Notes:</strong> ${invoice.notes}</p></div>` : ''}
+          ${invoice.notes ? `<div class="notes"><h4>Notes:</h4><p>${invoice.notes}</p></div>` : ''}
         </div>
-
         <div class="footer">
-          <p>This invoice was generated by Easy Charge Pro.</p>
-          <p>If you have any questions, please contact ${invoice.business_email}.</p>
+          <p>Questions? Contact ${invoice.business_name} at ${invoice.business_email}.</p>
+          <p>Powered by Easy Charge Pro</p>
         </div>
       </div>
     </body>
@@ -238,41 +212,27 @@ function generateInvoiceEmailHTML(invoice: any, customMessage?: string): string 
 }
 
 function getCurrencySymbol(currency: string): string {
-  const symbols: { [key: string]: string } = {
-    'USD': '$',
-    'EUR': '€',
-    'GBP': '£',
-    'JPY': '¥',
-    'CAD': 'C$',
-    'AUD': 'A$',
-  };
+  // Simple currency symbol mapping
+  const symbols: { [key: string]: string } = { 'USD': '$', 'EUR': '€', 'GBP': '£' };
   return symbols[currency] || currency;
 }
 
 function generateAutoMessage(invoice: any, recipientName?: string): string {
-  const currencySymbol = getCurrencySymbol(invoice.currency);
-  const formatCurrency = (amount: number) => `${currencySymbol}${amount.toFixed(2)}`;
+  const greeting = recipientName ? `Hi ${recipientName},` : `Hi there,`;
   const dueDate = new Date(invoice.due_date).toLocaleDateString();
-  
-  const greeting = recipientName ? `Dear ${recipientName},` : `Dear ${invoice.client_name},`;
-  
-  return `${greeting}
 
-Thank you for your business! Please find attached your invoice #${invoice.invoice_number} for the services provided.
+  return `
+${greeting}
 
-Invoice Details:
-• Invoice Number: #${invoice.invoice_number}
-• Issue Date: ${new Date(invoice.issue_date).toLocaleDateString()}
-• Due Date: ${dueDate}
-• Total Amount: ${formatCurrency(invoice.total)}
+Here is the invoice #${invoice.invoice_number} from ${invoice.business_name} for a total of ${getCurrencySymbol(invoice.currency)}${invoice.total.toFixed(2)}.
 
-Payment Instructions:
-Please remit payment by ${dueDate}. If you have any questions about this invoice or need to discuss payment arrangements, please don't hesitate to contact us.
+The payment is due by ${dueDate}.
 
-Thank you for your prompt attention to this matter.
+You can view the invoice attached to this email.
 
-Best regards,
-${invoice.business_name}
-${invoice.business_email ? `Email: ${invoice.business_email}` : ''}
-${invoice.business_phone ? `Phone: ${invoice.business_phone}` : ''}`;
+Thank you for your business!
+
+Best,
+The ${invoice.business_name} Team
+  `.trim();
 }

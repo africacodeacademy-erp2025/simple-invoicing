@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,15 +8,13 @@ import {
   Users,
   Zap,
   Shield,
-  CheckCircle,
   ArrowRight,
   Star,
   BarChart3,
-  Clock,
   Globe,
 } from "lucide-react";
 import PricingPlans from "@/components/PricingPlans";
-import { CardHeader, CardTitle } from "@/components/ui/card";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
 const Landing = () => {
   const features = [
@@ -24,36 +23,42 @@ const Landing = () => {
       title: "Professional Invoices",
       description:
         "Create stunning, professional invoices in minutes with our customizable templates.",
+      image: "https://images.pexels.com/photos/7172633/pexels-photo-7172633.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     },
     {
       icon: <Users className="h-8 w-8 text-primary" />,
       title: "Client Management",
       description:
         "Keep track of all your clients and their information in one organized place.",
+      image: "https://images.pexels.com/photos/3184423/pexels-photo-3184423.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     },
     {
       icon: <Zap className="h-8 w-8 text-primary" />,
       title: "Quick Generation",
       description:
         "Generate and send invoices instantly with our streamlined workflow.",
+      image: "https://images.pexels.com/photos/5926382/pexels-photo-5926382.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     },
     {
       icon: <Shield className="h-8 w-8 text-primary" />,
       title: "Secure & Reliable",
       description:
         "Your data is protected with enterprise-grade security and 99.9% uptime.",
+      image: "https://images.pexels.com/photos/5380649/pexels-photo-5380649.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     },
     {
       icon: <BarChart3 className="h-8 w-8 text-primary" />,
       title: "Analytics Dashboard",
       description:
         "Track your business performance with detailed analytics and insights.",
+      image: "https://images.pexels.com/photos/3760067/pexels-photo-3760067.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     },
     {
       icon: <Globe className="h-8 w-8 text-primary" />,
       title: "Multi-Currency",
       description:
         "Support for multiple currencies and international business needs.",
+      image: "https://images.pexels.com/photos/4386466/pexels-photo-4386466.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     },
   ];
 
@@ -96,6 +101,7 @@ const Landing = () => {
               </span>
             </div>
             <div className="flex items-center gap-4">
+              <ThemeToggle />
               <Link to="/signin">
                 <Button variant="ghost">Sign In</Button>
               </Link>
@@ -110,8 +116,11 @@ const Landing = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative py-20 lg:py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
+      <section
+        className="relative py-20 lg:py-32 overflow-hidden bg-cover bg-center"
+        style={{ backgroundImage: "url('https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')" }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-primary/30" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
@@ -160,22 +169,33 @@ const Landing = () => {
               your invoices efficiently.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="space-y-16">
             {features.map((feature, index) => (
-              <Card
+              <div
                 key={index}
-                className="p-6 hover:shadow-lg transition-shadow"
+                className={`flex flex-col md:flex-row items-center gap-8 ${(
+                  index % 2 === 1 ? "md:flex-row-reverse" : ""
+                )}`}
               >
-                <CardContent className="p-0">
+                <div className="md:w-1/2">
+                  <img
+                    src={feature.image}
+                    alt={feature.title}
+                    className="rounded-lg shadow-lg aspect-video object-cover"
+                  />
+                </div>
+                <div className="md:w-1/2">
                   <div className="flex items-center gap-4 mb-4">
                     {feature.icon}
-                    <h3 className="text-xl font-semibold text-foreground">
+                    <h3 className="text-2xl font-semibold text-foreground">
                       {feature.title}
                     </h3>
                   </div>
-                  <p className="text-muted-foreground">{feature.description}</p>
-                </CardContent>
-              </Card>
+                  <p className="text-lg text-muted-foreground">
+                    {feature.description}
+                  </p>
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -213,7 +233,7 @@ const Landing = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-muted/20">
+      <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -236,7 +256,7 @@ const Landing = () => {
                     ))}
                   </div>
                   <p className="text-muted-foreground mb-4 italic">
-                    "{testimonial.content}"
+                    \"{testimonial.content}\"
                   </p>
                   <div>
                     <div className="font-semibold text-foreground">
@@ -254,12 +274,16 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+      <section
+        className="relative py-20 bg-cover bg-center"
+        style={{ backgroundImage: "url('https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')" }}
+      >
+        <div className="absolute inset-0 bg-primary/80" />
+        <div className="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Ready to streamline your invoicing?
           </h2>
-          <p className="text-xl text-muted-foreground mb-8">
+          <p className="text-xl text-white/80 mb-8">
             Join thousands of businesses already using Simple Invoicing to
             manage their invoices.
           </p>
@@ -267,13 +291,17 @@ const Landing = () => {
             <Link to="/signup">
               <Button
                 size="lg"
-                className="bg-primary-gradient hover:opacity-90 text-lg px-8 py-6"
+                className="bg-white text-primary hover:bg-white/90 text-lg px-8 py-6"
               >
                 Get Started Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+            <Button
+              size="lg"
+              variant="outline"
+              className="text-lg px-8 py-6 border-white/50 text-white hover:bg-white/10"
+            >
               Contact Sales
             </Button>
           </div>

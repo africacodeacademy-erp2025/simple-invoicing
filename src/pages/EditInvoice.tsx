@@ -347,7 +347,7 @@ const EditInvoice = () => {
           <Button
             onClick={handleGeneratePDF}
             disabled={isGenerating}
-            className="bg-primary-gradient hover:opacity-90 transition-opacity"
+            className="bg-primary hover:opacity-90 transition-opacity"
           >
             {isGenerating ? (
               <>

@@ -113,10 +113,8 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="bg-sidebar/95 backdrop-blur-md border-sidebar-border shadow-lg relative">
-        {/* Subtle depth overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/3 pointer-events-none" />
 
-        {/* Premium Logo Section */}
         <div
           className={`relative border-b border-sidebar-border/60 bg-gradient-to-r from-primary/8 via-primary/5 to-transparent ${
             state === "collapsed" ? "p-3" : "h-16 px-6"
@@ -194,9 +192,8 @@ export function AppSidebar() {
           </SidebarGroup>
         </div>
 
-        {/* Logout Section */}
         <div
-          className={`relative mt-auto ${
+          className={`relative mt-auto py-4 ${
             state === "collapsed" ? "px-2" : "px-3"
           }`}
         >

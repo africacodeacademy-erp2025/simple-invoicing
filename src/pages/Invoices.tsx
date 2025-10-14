@@ -122,13 +122,30 @@ export default function Invoices() {
     }
   };
 
-  const handleDeleteInvoice = (invoiceId: string) => {
-    setInvoices((prev) => prev.filter((invoice) => invoice.id !== invoiceId));
-    toast({
-      title: "Invoice Deleted",
-      description: "Invoice has been deleted successfully.",
-      variant: "destructive",
-    });
+  const handleDeleteInvoice = async (invoiceId: string) => {
+    try {
+      const response = await InvoiceController.deleteInvoice(invoiceId);
+      if (response.success) {
+        setInvoices((prev) => prev.filter((invoice) => invoice.id !== invoiceId));
+        toast({
+          title: "Invoice Deleted",
+          description: "Invoice has been deleted successfully.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete invoice",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -141,8 +158,8 @@ export default function Invoices() {
             Manage and track all your invoices.
           </p>
         </div>
-        <Link to="/create-invoice">
-          <Button className="bg-primary-gradient hover:opacity-90">
+        <Link to="/app/create-invoice">
+          <Button className="bg-primary hover:opacity-90">
             <Plus className="h-4 w-4 mr-2" />
             Create Invoice
           </Button>

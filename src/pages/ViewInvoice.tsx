@@ -308,7 +308,7 @@ const ViewInvoice = () => {
           <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
             <DialogTrigger asChild>
               <Button
-                variant="outline"
+                
                 className="flex items-center gap-2"
               >
                 <Mail className="h-4 w-4" />
@@ -403,7 +403,7 @@ const ViewInvoice = () => {
                   <Button
                     onClick={handleSendEmail}
                     disabled={isSendingEmail || !emailData.recipientEmail}
-                    className="bg-primary-gradient hover:opacity-90"
+                    className="bg-primary hover:opacity-90"
                   >
                     {isSendingEmail ? (
                       <>
@@ -432,7 +432,7 @@ const ViewInvoice = () => {
               void handleGeneratePDF();
             }}
             disabled={isGenerating || !canExportPDFEffective}
-            className="bg-primary-gradient hover:opacity-90 transition-opacity"
+            className="bg-primary hover:opacity-90 transition-opacity"
           >
             {isGenerating ? (
               <>

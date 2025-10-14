@@ -1,13 +1,17 @@
-// src/hooks/usePlanAccess.ts
 
-import { useMemo } from 'react';
+// src/hooks/usePlanAccess.ts
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
-import { PlanAccessService, AccessCheckResult, PlanLimits, PLAN_LIMITS } from '@/services/planAccess.service';
+import { PlanAccessService, AccessCheckResult, PlanLimits } from '@/services/planAccess.service';
 
 export function usePlanAccess() {
   const { user } = useAuth();
   const { profile, profileLoading } = useProfile(user?.id ?? null);
+
+  const [limitsLoading, setLimitsLoading] = useState(true);
+  const [planLimits, setPlanLimits] = useState<PlanLimits | null>(null);
+  const [effectivePlanLimits, setEffectivePlanLimits] = useState<PlanLimits | null>(null);
 
   const isSubscriptionActive = useMemo(() => {
     return PlanAccessService.isSubscriptionActive(
@@ -23,72 +27,72 @@ export function usePlanAccess() {
     return isSubscriptionActive;
   }, [profile?.plan, isSubscriptionActive, profileLoading]);
 
-  const planLimits = useMemo(() => {
-    return PlanAccessService.getPlanLimits(profile?.plan);
-  }, [profile?.plan]);
+  useEffect(() => {
+    const fetchLimits = async () => {
+      if (profileLoading) return;
+      
+      setLimitsLoading(true);
+      try {
+        const normalizedPlan = PlanAccessService.normalizePlan(profile?.plan);
+        const limits = await PlanAccessService.getPlanLimits(normalizedPlan);
+        setPlanLimits(limits);
 
-  const effectivePlanLimits: PlanLimits = useMemo(() => {
-    const normalized = PlanAccessService.normalizePlan(profile?.plan);
-    if (!hasPremiumAccess) {
-      // Fall back to free limits when subscription is not active
-      return PLAN_LIMITS['free'];
-    }
-    return PLAN_LIMITS[normalized];
-  }, [profile?.plan, hasPremiumAccess]);
+        const isPaidPlan = normalizedPlan !== 'free' && normalizedPlan !== 'starter';
+        if (isPaidPlan && !isSubscriptionActive) {
+          const freeLimits = await PlanAccessService.getPlanLimits('free');
+          setEffectivePlanLimits(freeLimits);
+        } else {
+          setEffectivePlanLimits(limits);
+        }
+      } catch (error) {
+        console.error('Failed to fetch plan limits', error);
+        // Fallback to free limits in case of an error
+        const freeLimits = await PlanAccessService.getPlanLimits('free');
+        setPlanLimits(freeLimits);
+        setEffectivePlanLimits(freeLimits);
+      } finally {
+        setLimitsLoading(false);
+      }
+    };
 
-  const checkFeatureAccess = (feature: keyof PlanLimits): AccessCheckResult => {
+    fetchLimits();
+  }, [profile?.plan, profileLoading, isSubscriptionActive]);
+
+  const checkFeatureAccess = useCallback(async (feature: keyof PlanLimits): Promise<AccessCheckResult> => {
     return PlanAccessService.canAccessFeature(profile?.plan, feature);
-  };
-
-  const canUseAI = useMemo(() => {
-    return checkFeatureAccess('canUseAI').allowed;
   }, [profile?.plan]);
 
-  const canExportPDF = useMemo(() => {
-    return checkFeatureAccess('canExportPDF').allowed;
-  }, [profile?.plan]);
-
-  const canUseRecurring = useMemo(() => {
-    return checkFeatureAccess('canUseRecurring').allowed;
-  }, [profile?.plan]);
-
-  const canUseCustomBranding = useMemo(() => {
-    return checkFeatureAccess('canUseCustomBranding').allowed;
-  }, [profile?.plan]);
-
-  const requireUpgrade = (feature: keyof PlanLimits): AccessCheckResult => {
-    const result = checkFeatureAccess(feature);
-    if (!result.allowed && result.upgradeRequired) {
-      return {
-        allowed: false,
-        reason: result.reason,
-        upgradeRequired: result.upgradeRequired,
-      };
-    }
-    return result;
-  };
+  const requireUpgrade = useCallback(async (feature: keyof PlanLimits): Promise<AccessCheckResult> => {
+    return checkFeatureAccess(feature);
+  }, [checkFeatureAccess]);
+  
+  const features = useMemo(() => ({
+    canUseAI: effectivePlanLimits?.canUseAI ?? false,
+    canExportPDF: effectivePlanLimits?.canExportPDF ?? false,
+    canUseRecurring: effectivePlanLimits?.canUseRecurring ?? false,
+    canUseCustomBranding: effectivePlanLimits?.canUseCustomBranding ?? false,
+    canUseAdvancedAnalytics: effectivePlanLimits?.canUseAdvancedAnalytics ?? false,
+    canUseTeamAccess: effectivePlanLimits?.canUseTeamAccess ?? false,
+    canUseAutomatedReminders: effectivePlanLimits?.canUseAutomatedReminders ?? false,
+    canUseIntegrations: effectivePlanLimits?.canUseIntegrations ?? false,
+    canUseAPIAccess: effectivePlanLimits?.canUseAPIAccess ?? false,
+    prioritySupport: effectivePlanLimits?.prioritySupport ?? false,
+  }), [effectivePlanLimits]);
 
   return {
     profile,
     profileLoading,
-    planLimits,
-    effectivePlanLimits,
+    limitsLoading,
+    planLimits, // The limits of the user's subscribed plan
+    effectivePlanLimits, // The limits the user can actually use right now
     isSubscriptionActive,
+    hasPremiumAccess,
     checkFeatureAccess,
     requireUpgrade,
-    // Convenient boolean checks
-    canUseAI,
-    canExportPDF,
-    canUseRecurring,
-    // Effective permissions require active paid subscription when feature is premium
-    canUseAIEffective: canUseAI && hasPremiumAccess,
-    canExportPDFEffective: canExportPDF && hasPremiumAccess,
-    canUseRecurringEffective: canUseRecurring && hasPremiumAccess,
-    canUseCustomBranding,
-    hasPremiumAccess,
+    ...features,
     isPro: profile?.plan?.toLowerCase().includes('pro'),
     isBusiness: profile?.plan?.toLowerCase().includes('business'),
     isEnterprise: profile?.plan?.toLowerCase().includes('enterprise'),
     isFree: !profile?.plan || profile.plan.toLowerCase() === 'free' || profile.plan.toLowerCase() === 'starter',
   };
-} 
+}

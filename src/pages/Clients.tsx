@@ -368,15 +368,17 @@ export default function Clients() {
             Manage your client information and contact details.
           </p>
           {/* ADD THIS: Show current usage */}
-          <p className="text-xs text-muted-foreground mt-2">
-            {clients.length} / {effectivePlanLimits.maxClients === Infinity ? '∞' : effectivePlanLimits.maxClients} clients
-          </p>
+          {effectivePlanLimits && (
+            <p className="text-xs text-muted-foreground mt-2">
+              {clients.length} / {effectivePlanLimits.maxClients === Infinity ? '∞' : effectivePlanLimits.maxClients} clients
+            </p>
+          )}
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button
               onClick={handleAddClient}
-              className="bg-primary-gradient hover:opacity-90 shadow-lg"
+              className="bg-primary hover:opacity-90 shadow-lg"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Client
@@ -510,7 +512,7 @@ export default function Clients() {
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-primary-gradient hover:opacity-90 min-w-[120px]"
+                  className="bg-primary hover:opacity-90 min-w-[120px]"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
@@ -720,13 +722,13 @@ export default function Clients() {
       </Card>
 
       {/* ADD THIS: Paywall Modal */}
-      <PaywallModal
+      {effectivePlanLimits && (<PaywallModal
         isOpen={showPaywall}
         onClose={() => setShowPaywall(false)}
         feature="Additional Clients"
         requiredPlan="pro"
-        description={`You've reached your limit of ${effectivePlanLimits.maxClients} clients. Upgrade to Pro to add up to 50 clients, or Business for unlimited clients.`}
-      />
+        description={`You\'ve reached your limit of ${effectivePlanLimits.maxClients} clients. Upgrade to Pro to add up to 50 clients, or Business for unlimited clients.`}
+      />)}
     </div>
   );
 }

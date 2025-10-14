@@ -1,3 +1,4 @@
+
 // src/components/PaywallModal.tsx
 
 import React from 'react';
@@ -22,6 +23,20 @@ interface PaywallModalProps {
 }
 
 const PLAN_INFO = {
+  free: {
+    name: 'Free',
+    price: '$0',
+    highlights: [],
+  },
+  starter: {
+    name: 'Starter',
+    price: '$5/mo',
+    highlights: [
+      'Up to 20 invoices/mo',
+      'Up to 10 clients',
+      'PDF export',
+    ],
+  },
   pro: {
     name: 'Pro',
     price: '$10/mo',
@@ -89,7 +104,6 @@ export function PaywallModal({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Plan highlights */}
           <div className="rounded-lg border bg-muted/50 p-4">
             <div className="mb-3 flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">
@@ -107,7 +121,6 @@ export function PaywallModal({
             </ul>
           </div>
 
-          {/* CTA Buttons */}
           <div className="flex flex-col gap-2">
             <Button
               onClick={handleUpgrade}

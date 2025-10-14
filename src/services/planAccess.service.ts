@@ -1,4 +1,6 @@
+
 // src/services/planAccess.service.ts
+import { supabase } from '../lib/supabase';
 
 export type PlanTier = 'free' | 'starter' | 'pro' | 'business' | 'enterprise';
 
@@ -18,83 +20,7 @@ export interface PlanLimits {
   prioritySupport: boolean;
 }
 
-export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
-  free: {
-    maxInvoicesPerMonth: 5,
-    maxClients: 3,
-    maxTemplates: 1,
-    canUseAI: false,
-    canExportPDF: false,
-    canUseRecurring: false,
-    canUseCustomBranding: false,
-    canUseAdvancedAnalytics: false,
-    canUseTeamAccess: false,
-    canUseAutomatedReminders: false,
-    canUseIntegrations: false,
-    canUseAPIAccess: false,
-    prioritySupport: false,
-  },
-  starter: {
-    maxInvoicesPerMonth: 5,
-    maxClients: 3,
-    maxTemplates: 1,
-    canUseAI: false,
-    canExportPDF: false,
-    canUseRecurring: false,
-    canUseCustomBranding: false,
-    canUseAdvancedAnalytics: false,
-    canUseTeamAccess: false,
-    canUseAutomatedReminders: false,
-    canUseIntegrations: false,
-    canUseAPIAccess: false,
-    prioritySupport: false,
-  },
-  pro: {
-    maxInvoicesPerMonth: Infinity,
-    maxClients: 50,
-    maxTemplates: Infinity,
-    canUseAI: true,
-    canExportPDF: true,
-    canUseRecurring: true,
-    canUseCustomBranding: false,
-    canUseAdvancedAnalytics: false,
-    canUseTeamAccess: false,
-    canUseAutomatedReminders: false,
-    canUseIntegrations: false,
-    canUseAPIAccess: false,
-    prioritySupport: true,
-  },
-  business: {
-    maxInvoicesPerMonth: Infinity,
-    maxClients: Infinity,
-    maxTemplates: Infinity,
-    canUseAI: true,
-    canExportPDF: true,
-    canUseRecurring: true,
-    canUseCustomBranding: true,
-    canUseAdvancedAnalytics: true,
-    canUseTeamAccess: true,
-    canUseAutomatedReminders: true,
-    canUseIntegrations: true,
-    canUseAPIAccess: false,
-    prioritySupport: true,
-  },
-  enterprise: {
-    maxInvoicesPerMonth: Infinity,
-    maxClients: Infinity,
-    maxTemplates: Infinity,
-    canUseAI: true,
-    canExportPDF: true,
-    canUseRecurring: true,
-    canUseCustomBranding: true,
-    canUseAdvancedAnalytics: true,
-    canUseTeamAccess: true,
-    canUseAutomatedReminders: true,
-    canUseIntegrations: true,
-    canUseAPIAccess: true,
-    prioritySupport: true,
-  },
-};
+export type AllPlanLimits = Record<PlanTier, PlanLimits>;
 
 export interface AccessCheckResult {
   allowed: boolean;
@@ -103,6 +29,27 @@ export interface AccessCheckResult {
 }
 
 export class PlanAccessService {
+  private static _planLimits: AllPlanLimits | null = null;
+
+  /**
+   * Fetch all plan limits from the backend and cache them.
+   */
+  private static async _getOrFetchPlanLimits(): Promise<AllPlanLimits> {
+    if (this._planLimits) {
+      return this._planLimits;
+    }
+
+    const { data, error } = await supabase.functions.invoke('plan-limits');
+    
+    if (error) {
+      console.error('Error fetching plan limits:', error);
+      throw new Error('Could not fetch plan limits from the server.');
+    }
+
+    this._planLimits = data as AllPlanLimits;
+    return this._planLimits!;
+  }
+
   /**
    * Normalize plan string to PlanTier
    */
@@ -121,19 +68,20 @@ export class PlanAccessService {
   /**
    * Get plan limits for a user's plan
    */
-  static getPlanLimits(plan?: string | null): PlanLimits {
+  static async getPlanLimits(plan?: string | null): Promise<PlanLimits> {
+    const allLimits = await this._getOrFetchPlanLimits();
     const normalizedPlan = this.normalizePlan(plan);
-    return PLAN_LIMITS[normalizedPlan];
+    return allLimits[normalizedPlan];
   }
 
   /**
    * Check if user can access a specific feature
    */
-  static canAccessFeature(
+  static async canAccessFeature(
     userPlan: string | null | undefined,
     feature: keyof PlanLimits
-  ): AccessCheckResult {
-    const limits = this.getPlanLimits(userPlan);
+  ): Promise<AccessCheckResult> {
+    const limits = await this.getPlanLimits(userPlan);
     const featureValue = limits[feature];
 
     if (typeof featureValue === 'boolean') {
@@ -141,8 +89,7 @@ export class PlanAccessService {
         return { allowed: true };
       }
       
-      // Find minimum plan that allows this feature
-      const upgradeRequired = this.getMinimumPlanForFeature(feature);
+      const upgradeRequired = await this.getMinimumPlanForFeature(feature);
       return {
         allowed: false,
         reason: `This feature requires ${upgradeRequired} plan or higher`,
@@ -157,14 +104,13 @@ export class PlanAccessService {
    * Check if user has reached their invoice limit for the month
    */
   static async canCreateInvoice(
-    userId: string,
     userPlan: string | null | undefined,
     currentMonthInvoiceCount: number
   ): Promise<AccessCheckResult> {
-    const limits = this.getPlanLimits(userPlan);
+    const limits = await this.getPlanLimits(userPlan);
     
     if (currentMonthInvoiceCount >= limits.maxInvoicesPerMonth) {
-      const upgradeRequired = this.getMinimumPlanForLimit('maxInvoicesPerMonth', currentMonthInvoiceCount + 1);
+      const upgradeRequired = await this.getMinimumPlanForLimit('maxInvoicesPerMonth', currentMonthInvoiceCount + 1);
       return {
         allowed: false,
         reason: `You've reached your limit of ${limits.maxInvoicesPerMonth} invoices per month. Upgrade to create more.`,
@@ -178,14 +124,14 @@ export class PlanAccessService {
   /**
    * Check if user can create more clients
    */
-  static canCreateClient(
+  static async canCreateClient(
     userPlan: string | null | undefined,
     currentClientCount: number
-  ): AccessCheckResult {
-    const limits = this.getPlanLimits(userPlan);
+  ): Promise<AccessCheckResult> {
+    const limits = await this.getPlanLimits(userPlan);
     
     if (currentClientCount >= limits.maxClients) {
-      const upgradeRequired = this.getMinimumPlanForLimit('maxClients', currentClientCount + 1);
+      const upgradeRequired = await this.getMinimumPlanForLimit('maxClients', currentClientCount + 1);
       return {
         allowed: false,
         reason: `You've reached your limit of ${limits.maxClients} clients. Upgrade to add more.`,
@@ -199,17 +145,19 @@ export class PlanAccessService {
   /**
    * Check if user can use a specific template
    */
-  static canUseTemplate(
+  static async canUseTemplate(
     userPlan: string | null | undefined,
     templateIndex: number
-  ): AccessCheckResult {
-    const limits = this.getPlanLimits(userPlan);
+  ): Promise<AccessCheckResult> {
+    const limits = await this.getPlanLimits(userPlan);
     
     if (templateIndex >= limits.maxTemplates) {
+      const requiredValue = templateIndex + 1;
+      const upgradeRequired = await this.getMinimumPlanForLimit('maxTemplates', requiredValue);
       return {
         allowed: false,
-        reason: `This template requires a Pro plan or higher`,
-        upgradeRequired: 'pro',
+        reason: `This template requires a ${upgradeRequired} plan or higher`,
+        upgradeRequired: upgradeRequired,
       };
     }
 
@@ -219,11 +167,12 @@ export class PlanAccessService {
   /**
    * Get minimum plan that allows a specific feature
    */
-  private static getMinimumPlanForFeature(feature: keyof PlanLimits): PlanTier {
+  private static async getMinimumPlanForFeature(feature: keyof PlanLimits): Promise<PlanTier> {
+    const allLimits = await this._getOrFetchPlanLimits();
     const plans: PlanTier[] = ['free', 'starter', 'pro', 'business', 'enterprise'];
     
     for (const plan of plans) {
-      const limits = PLAN_LIMITS[plan];
+      const limits = allLimits[plan];
       const value = limits[feature];
       if (typeof value === 'boolean' && value === true) {
         return plan;
@@ -236,14 +185,15 @@ export class PlanAccessService {
   /**
    * Get minimum plan that allows a specific limit value
    */
-  private static getMinimumPlanForLimit(
+  private static async getMinimumPlanForLimit(
     limitKey: keyof PlanLimits,
     requiredValue: number
-  ): PlanTier {
+  ): Promise<PlanTier> {
+    const allLimits = await this._getOrFetchPlanLimits();
     const plans: PlanTier[] = ['free', 'starter', 'pro', 'business', 'enterprise'];
     
     for (const plan of plans) {
-      const limits = PLAN_LIMITS[plan];
+      const limits = allLimits[plan];
       const value = limits[limitKey];
       if (typeof value === 'number' && value >= requiredValue) {
         return plan;
@@ -265,7 +215,6 @@ export class PlanAccessService {
     const activeStatuses = ['active', 'trialing'];
     if (!activeStatuses.includes(subscriptionStatus)) return false;
 
-    // Check if subscription has expired
     if (currentPeriodEnd) {
       const endDate = new Date(currentPeriodEnd);
       if (endDate < new Date()) return false;
@@ -277,19 +226,17 @@ export class PlanAccessService {
   /**
    * Comprehensive access check for premium features
    */
-  static checkPremiumAccess(
+  static async checkPremiumAccess(
     userPlan: string | null | undefined,
     subscriptionStatus?: string | null,
     currentPeriodEnd?: string | null
-  ): AccessCheckResult {
+  ): Promise<AccessCheckResult> {
     const normalizedPlan = this.normalizePlan(userPlan);
     
-    // Free and starter plans always have access (to free features)
     if (normalizedPlan === 'free' || normalizedPlan === 'starter') {
       return { allowed: true };
     }
 
-    // For paid plans, check subscription status
     if (!this.isSubscriptionActive(subscriptionStatus, currentPeriodEnd)) {
       return {
         allowed: false,

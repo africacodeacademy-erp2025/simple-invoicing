@@ -66,7 +66,6 @@ export function AIInvoiceSection({ onGenerate, isGenerating }: AIInvoiceSectionP
                 </p>
                 <Button
                   onClick={() => setShowPaywall(true)}
-                  className="bg-primary-gradient"
                 >
                   <Sparkles className="mr-2 h-4 w-4" />
                   Upgrade to Pro
@@ -99,7 +98,8 @@ export function AIInvoiceSection({ onGenerate, isGenerating }: AIInvoiceSectionP
           <Button
             onClick={handleGenerate}
             disabled={!canUseAIEffective || isGenerating || !prompt.trim()}
-            className="w-full bg-primary-gradient"
+            className="w-full shadow-glow-primary animate-button-shine"
+            size="lg"
           >
             {isGenerating ? (
               <>

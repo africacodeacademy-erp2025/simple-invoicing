@@ -315,7 +315,7 @@ export default function Templates() {
               This template is part of our Pro plan. Pay to unlock this and other premium templates, plus get access to all pro features.
             </p>
             <Button
-              className="mt-4 w-full"
+              className="mt-4 w-full bg-primary"
               onClick={() =>
                 BillingService.startCheckout(
                   import.meta.env.VITE_STRIPE_PRICE_PRO_MONTHLY || ""

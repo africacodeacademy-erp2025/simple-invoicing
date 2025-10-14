@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { User } from "lucide-react";
+import { User, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import ProfileSetupModal from "@/components/ProfileSetupModal";
+import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 
-// Helper function to get page title based on current route
 const getPageTitle = (pathname: string) => {
   const routes: Record<string, string> = {
     "/app/dashboard": "Dashboard",
@@ -31,60 +32,48 @@ export const DashboardLayout = () => {
   );
   const [showProfileModal, setShowProfileModal] = useState(false);
 
-  // Show profile modal when user is authenticated but doesn't have a complete profile
   useEffect(() => {
-    // Only make decisions after profile loading is complete
     if (!profileLoading) {
       if (user && !hasCompleteProfile) {
         setShowProfileModal(true);
       } else if (user && hasCompleteProfile) {
-        // Close modal if profile becomes complete
         setShowProfileModal(false);
       }
     }
   }, [user, hasCompleteProfile, profileLoading]);
 
-  // No need for handleProfileCreated since modal just navigates to profile page
-
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
+      <div className="min-h-screen w-full flex bg-background">
+        <div className="hidden lg:block">
+          <AppSidebar />
+        </div>
 
         <div className="flex-1 flex flex-col">
-          {/* Enhanced Header */}
-          <header className="sticky top-0 h-16 border-b border-border/60 bg-card/95 backdrop-blur-md shadow-lg flex items-center px-4 lg:px-6 relative z-50">
-            {/* Subtle gradient overlay for depth */}
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50" />
+          <header className="sticky top-0 h-16 border-b bg-card/95 backdrop-blur-md flex items-center px-4 lg:px-6 z-50">
+            <div className="flex items-center w-full gap-4">
+              <Drawer direction="left">
+                <DrawerTrigger asChild>
+                  <Button variant="ghost" size="icon" className="lg:hidden">
+                    <PanelLeft className="h-5 w-5" />
+                    <span className="sr-only">Toggle Menu</span>
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent className="w-3/4 p-0">
+                  <AppSidebar />
+                </DrawerContent>
+              </Drawer>
 
-            <div className="relative flex items-center w-full gap-4">
-              {/* Sidebar Toggle */}
-              <SidebarTrigger className="hover:bg-muted/80 transition-colors shrink-0" />
+              <SidebarTrigger className="hidden lg:block hover:bg-muted/80 transition-colors shrink-0" />
 
-              {/* Page Title & Breadcrumb */}
               <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-semibold text-foreground truncate">
                   {currentPageTitle}
                 </h1>
-                <p className="text-sm text-muted-foreground hidden sm:block">
-                  {location.pathname === "/app/dashboard" &&
-                    "Overview of your invoice management"}
-                  {location.pathname === "/app/create-invoice" &&
-                    "Create a new professional invoice"}
-                  {location.pathname === "/app/invoices" &&
-                    "Manage all your invoices"}
-                  {location.pathname === "/app/clients" &&
-                    "Manage your client database"}
-                  {location.pathname === "/app/templates" &&
-                    "Customize your invoice templates"}
-                  {location.pathname === "/app/profile" &&
-                    "Manage your account settings"}
-                </p>
               </div>
 
-              {/* Header Actions */}
-              <div className="flex items-center gap-2">
-                {/* User Profile */}
+              <div className="flex items-center gap-4">
+                <ThemeToggle />
                 <Button
                   variant="ghost"
                   size="icon"
@@ -104,26 +93,18 @@ export const DashboardLayout = () => {
             </div>
           </header>
 
-          {/* Enhanced Main Content */}
-          <main className="flex-1 p-4 lg:p-6 bg-muted/20 relative overflow-hidden border-t border-border/20">
-            {/* Enhanced background pattern with depth */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,hsl(var(--primary)/0.08),transparent_60%)] pointer-events-none" />
-            <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0%,hsl(var(--primary)/0.02)_50%,transparent_100%)] pointer-events-none" />
-
-            <div className="relative">
-              <Outlet />
-            </div>
+          <main className="flex-1 p-4 lg:p-6 bg-muted/20">
+            <Outlet />
           </main>
         </div>
-      </div>
 
-      {/* Profile Setup Modal */}
-      {user && (
-        <ProfileSetupModal
-          isOpen={showProfileModal}
-          onClose={() => setShowProfileModal(false)}
-        />
-      )}
+        {user && (
+          <ProfileSetupModal
+            isOpen={showProfileModal}
+            onClose={() => setShowProfileModal(false)}
+          />
+        )}
+      </div>
     </SidebarProvider>
   );
 };

@@ -99,15 +99,17 @@ const SignIn = () => {
       {/* Right Side - Sign In Form */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
+          {/* Back to Home link */}
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to home
+          </Link>
+          
           {/* Mobile Header */}
           <div className="lg:hidden text-center mb-8">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to home
-            </Link>
             <div className="flex items-center justify-center gap-2 mb-4">
               <div className="w-10 h-10 bg-primary-gradient rounded-lg flex items-center justify-center">
                 <FileText className="h-6 w-6 text-white" />

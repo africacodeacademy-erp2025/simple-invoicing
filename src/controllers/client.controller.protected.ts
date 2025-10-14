@@ -1,6 +1,5 @@
-// src/controllers/client.controller.protected.ts
-// Enhanced client controller with access control
 
+// src/controllers/client.controller.protected.ts
 import { supabase } from '@/lib/supabase';
 import { PlanAccessService } from '@/services/planAccess.service';
 
@@ -26,7 +25,6 @@ export class ProtectedClientController {
    * Check if user can create a new client
    */
   static async canCreateClient(userId: string, userPlan?: string | null) {
-    // Get user's profile
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('plan, subscription_status, current_period_end')
@@ -35,26 +33,22 @@ export class ProtectedClientController {
 
     const plan = userPlan || profile?.plan;
 
-    // Check subscription status
-    const accessCheck = PlanAccessService.checkPremiumAccess(
+    const premiumAccess = await PlanAccessService.checkPremiumAccess(
       plan,
       profile?.subscription_status,
       profile?.current_period_end
     );
 
-    if (!accessCheck.allowed) {
+    if (!premiumAccess.allowed) {
       return {
         success: false,
-        error: accessCheck.reason,
+        error: premiumAccess.reason,
         code: 'SUBSCRIPTION_EXPIRED',
       };
     }
 
-    // Get current client count
     const clientCount = await this.getClientCount(userId);
-
-    // Check if user can create more clients
-    const limitCheck = PlanAccessService.canCreateClient(plan, clientCount);
+    const limitCheck = await PlanAccessService.canCreateClient(plan, clientCount);
 
     if (!limitCheck.allowed) {
       return {
@@ -76,7 +70,6 @@ export class ProtectedClientController {
    * Create client with access control
    */
   static async createClient(userId: string, clientData: any) {
-    // Check if user can create client
     const canCreate = await this.canCreateClient(userId);
     
     if (!canCreate.success) {
@@ -88,7 +81,6 @@ export class ProtectedClientController {
       };
     }
 
-    // Proceed with client creation
     const { data, error } = await supabase
       .from('clients')
       .insert([{ ...clientData, user_id: userId }])

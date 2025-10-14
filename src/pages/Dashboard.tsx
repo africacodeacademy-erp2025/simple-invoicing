@@ -29,14 +29,12 @@ export default function Dashboard() {
   });
   const [recentInvoices, setRecentInvoices] = useState([]);
 
-  // Load dashboard data
   useEffect(() => {
     const loadDashboardData = async () => {
       if (!user?.id) return;
 
       setIsLoading(true);
       try {
-        // Load invoices and clients in parallel
         const [invoicesResponse, clientsResponse] = await Promise.all([
           InvoiceController.getInvoices(user.id),
           ClientController.getClients(user.id),
@@ -46,7 +44,6 @@ export default function Dashboard() {
           const invoices = invoicesResponse.data || [];
           const clients = clientsResponse.data || [];
 
-          // Calculate stats
           const recurringCount = invoices.filter(
             (inv) => inv.is_recurring
           ).length;
@@ -61,13 +58,12 @@ export default function Dashboard() {
             totalClients: clients.length,
           });
 
-          // Get recent invoices (last 4)
           const recent = invoices
             .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
             .slice(0, 4)
             .map((invoice) => ({
-              id: invoice.id, // Use database ID for the view link
-              invoiceNumber: invoice.invoice_number, // Display number
+              id: invoice.id,
+              invoiceNumber: invoice.invoice_number,
               client: invoice.client_name,
               amount: invoice.total,
               currency: invoice.currency,
@@ -94,10 +90,9 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 max-w-7xl">
-      {/* Premium Header */}
       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold bg-primary-gradient bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold text-primary">
             Dashboard
           </h1>
           <p className="text-muted-foreground text-lg">
@@ -107,7 +102,7 @@ export default function Dashboard() {
 
         <div className="flex flex-col sm:flex-row gap-3">
           <Link to="/app/create-invoice">
-            <Button className="bg-primary-gradient hover:shadow-lg transition-all duration-300 hover:scale-105 shadow-md">
+            <Button className="bg-primary hover:shadow-lg transition-all duration-300 hover:scale-105 shadow-md">
               <Plus className="h-4 w-4 mr-2" />
               Create Invoice
             </Button>
@@ -115,7 +110,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Premium Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="bg-card-gradient shadow-medium hover:shadow-large transition-all duration-300 border-0 animate-scale-in">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
@@ -217,9 +211,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Premium Activity Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Recent Invoices - Takes up 2 columns */}
         <Card className="xl:col-span-2 bg-card-gradient shadow-medium border-0 overflow-hidden">
           <CardHeader className="border-b border-border/50 bg-muted/20">
             <CardTitle className="flex items-center justify-between text-lg">
@@ -311,7 +303,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Quick Actions Sidebar */}
         <Card className="bg-card-gradient shadow-medium border-0">
           <CardHeader className="border-b border-border/50 bg-muted/20">
             <CardTitle className="flex items-center gap-3 text-lg">
@@ -369,10 +360,9 @@ export default function Dashboard() {
               </Link>
             </div>
 
-            {/* Premium Feature Highlight */}
             <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 bg-primary-gradient rounded-full flex items-center justify-center">
+                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
                   <Sparkles className="h-4 w-4 text-white" />
                 </div>
                 <span className="font-semibold text-foreground">
@@ -386,7 +376,7 @@ export default function Dashboard() {
               <Link to="/app/create-invoice">
                 <Button
                   size="sm"
-                  className="w-full bg-primary-gradient hover:shadow-md transition-shadow"
+                  className="w-full bg-primary hover:shadow-md transition-shadow"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
                   Try AI Generation
