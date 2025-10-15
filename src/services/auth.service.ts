@@ -111,6 +111,69 @@ export class AuthService {
     }
   }
 
+  static async signInWithGoogle(): Promise<any> {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+      });
+
+      if (error) {
+        return {
+          data: null,
+          error,
+          success: false,
+          message: this.getErrorMessage(error),
+        };
+      }
+
+      return {
+        data,
+        error: null,
+        success: true,
+        message: "Successfully signed in with Google.",
+      };
+    } catch (error) {
+      return {
+        data: null,
+        error: error as AuthError,
+        success: false,
+        message: "An unexpected error occurred during Google sign in.",
+      };
+    }
+  }
+
+  static async signInWithFacebook(): Promise<any> {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "facebook",
+      });
+
+      if (error) {
+        return {
+          data: null,
+          error,
+          success: false,
+          message: this.getErrorMessage(error),
+        };
+      }
+
+      return {
+        data,
+        error: null,
+        success: true,
+        message: "Successfully signed in with Facebook.",
+      };
+    } catch (error) {
+      return {
+        data: null,
+        error: error as AuthError,
+        success: false,
+        message: "An unexpected error occurred during Facebook sign in.",
+      };
+    }
+  }
+
+
   /**
    * Sign out the current user
    */
