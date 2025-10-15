@@ -24,6 +24,8 @@ interface AuthContextType {
     }
   ) => Promise<AuthControllerResponse<{ user: User; session: Session }>>;
   signOut: () => Promise<AuthControllerResponse<null>>;
+  signInWithGoogle: () => Promise<AuthControllerResponse<{ user: User; session: Session }>>;
+  signInWithFacebook: () => Promise<AuthControllerResponse<{ user: User; session: Session }>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,7 +46,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
     const getInitialSession = async () => {
       try {
         const response = await AuthController.getCurrentSession();
@@ -63,7 +64,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     getInitialSession();
 
-    // Listen for auth changes
     const {
       data: { subscription },
     } = AuthService.onAuthStateChange(async (event, session) => {
@@ -95,6 +95,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return await AuthController.signOut();
   };
 
+  const signInWithGoogle = async () => {
+    return await AuthController.signInWithGoogle();
+  };
+
+  const signInWithFacebook = async () => {
+    return await AuthController.signInWithFacebook();
+  };
+
   const value = {
     user,
     session,
@@ -102,6 +110,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     signIn,
     signUp,
     signOut,
+    signInWithGoogle,
+    signInWithFacebook,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

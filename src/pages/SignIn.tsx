@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ const SignIn = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle, signInWithFacebook } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,7 +26,6 @@ const SignIn = () => {
     setIsLoading(true);
 
     try {
-      // Validate form data
       const validation = ValidationService.validateSignInForm({
         email,
         password,
@@ -40,7 +40,6 @@ const SignIn = () => {
         return;
       }
 
-      // Call auth controller
       const response = await signIn(email, password);
 
       if (!response.success) {
@@ -60,6 +59,58 @@ const SignIn = () => {
       navigate("/app/dashboard");
     } catch (error: unknown) {
       console.error("Sign in error:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred. Please try again.";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      const response = await signInWithGoogle();
+      if (!response.success) {
+        toast({
+          title: "Error",
+          description: response.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred. Please try again.";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFacebookSignIn = async () => {
+    setIsLoading(true);
+    try {
+      const response = await signInWithFacebook();
+      if (!response.success) {
+        toast({
+          title: "Error",
+          description: response.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
           ? error.message
@@ -214,7 +265,7 @@ const SignIn = () => {
 
               <div className="mt-6 text-center">
                 <p className="text-sm text-muted-foreground">
-                  Don't have an account?{" "}
+                  Don\'t have an account?{" "}
                   <Link
                     to="/signup"
                     className="text-primary hover:underline font-medium"
@@ -237,7 +288,11 @@ const SignIn = () => {
                 </div>
 
                 <div className="mt-6 grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="h-11">
+                  <Button
+                    variant="outline"
+                    className="h-11"
+                    onClick={handleGoogleSignIn}
+                  >
                     <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
                       <path
                         fill="currentColor"
@@ -258,15 +313,19 @@ const SignIn = () => {
                     </svg>
                     Google
                   </Button>
-                  <Button variant="outline" className="h-11">
+                  <Button
+                    variant="outline"
+                    className="h-11"
+                    onClick={handleFacebookSignIn}
+                  >
                     <svg
                       className="h-4 w-4 mr-2"
                       fill="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
+                      <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z" />
                     </svg>
-                    Twitter
+                    Facebook
                   </Button>
                 </div>
               </div>

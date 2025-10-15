@@ -100,6 +100,57 @@ export class AuthController {
     }
   }
 
+  static async signInWithGoogle(): Promise<any> {
+    try {
+      const response = await AuthService.signInWithGoogle();
+      if (!response.success) {
+        return {
+          success: false,
+          message: response.message || "Sign in with Google failed",
+          error: response.error?.message,
+        };
+      }
+      return {
+        success: true,
+        data: response.data,
+        message: "Successfully signed in with Google",
+      };
+    } catch (error) {
+      console.error("AuthController.signInWithGoogle error:", error);
+      return {
+        success: false,
+        message: "An unexpected error occurred during Google sign in",
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  static async signInWithFacebook(): Promise<any> {
+    try {
+      const response = await AuthService.signInWithFacebook();
+      if (!response.success) {
+        return {
+          success: false,
+          message: response.message || "Sign in with Facebook failed",
+          error: response.error?.message,
+        };
+      }
+      return {
+        success: true,
+        data: response.data,
+        message: "Successfully signed in with Facebook",
+      };
+    } catch (error) {
+      console.error("AuthController.signInWithFacebook error:", error);
+      return {
+        success: false,
+        message: "An unexpected error occurred during Facebook sign in",
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+
   /**
    * Handle user sign out
    */

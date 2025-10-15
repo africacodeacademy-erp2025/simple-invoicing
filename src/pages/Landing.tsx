@@ -123,7 +123,7 @@ const Landing = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-primary/30" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
               Create Professional
               <span className="bg-primary-gradient bg-clip-text text-transparent">
                 {" "}
@@ -131,7 +131,7 @@ const Landing = () => {
               </span>
               in Minutes
             </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+            <p className="text-xl text-white/90 mb-8 max-w-3xl mx-auto">
               Streamline your invoicing process with our powerful, easy-to-use
               platform. Generate beautiful invoices, manage clients, and get
               paid faster.
@@ -150,7 +150,7 @@ const Landing = () => {
                 Watch Demo
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground mt-4">
+            <p className="text-sm text-white/70 mt-4">
               No credit card required • 14-day free trial
             </p>
           </div>
@@ -164,7 +164,7 @@ const Landing = () => {
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               Everything you need to manage invoices
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-xl text-foreground/80 max-w-2xl mx-auto">
               Powerful features designed to help you create, manage, and track
               your invoices efficiently.
             </p>
@@ -191,7 +191,7 @@ const Landing = () => {
                       {feature.title}
                     </h3>
                   </div>
-                  <p className="text-lg text-muted-foreground">
+                  <p className="text-lg text-foreground/70">
                     {feature.description}
                   </p>
                 </div>
@@ -207,15 +207,15 @@ const Landing = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div>
               <div className="text-4xl font-bold text-primary mb-2">10K+</div>
-              <div className="text-muted-foreground">Happy Customers</div>
+              <div className="text-foreground/70">Happy Customers</div>
             </div>
             <div>
               <div className="text-4xl font-bold text-primary mb-2">1M+</div>
-              <div className="text-muted-foreground">Invoices Created</div>
+              <div className="text-foreground/70">Invoices Created</div>
             </div>
             <div>
               <div className="text-4xl font-bold text-primary mb-2">99.9%</div>
-              <div className="text-muted-foreground">Uptime</div>
+              <div className="text-foreground/70">Uptime</div>
             </div>
           </div>
         </div>
@@ -226,7 +226,7 @@ const Landing = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Simple pricing</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Choose the plan that fits your stage. Start free, upgrade as you grow.</p>
+            <p className="text-xl text-foreground/80 max-w-2xl mx-auto">Choose the plan that fits your stage. Start free, upgrade as you grow.</p>
           </div>
           <PricingPlans />
         </div>
@@ -239,7 +239,7 @@ const Landing = () => {
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               What our customers say
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl text-foreground/80">
               Join thousands of satisfied users who trust Simple Invoicing
             </p>
           </div>
@@ -255,14 +255,14 @@ const Landing = () => {
                       />
                     ))}
                   </div>
-                  <p className="text-muted-foreground mb-4 italic">
+                  <p className="text-foreground/70 mb-4 italic">
                     \"{testimonial.content}\"
                   </p>
                   <div>
                     <div className="font-semibold text-foreground">
                       {testimonial.name}
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-foreground/60">
                       {testimonial.role}
                     </div>
                   </div>
@@ -321,30 +321,30 @@ const Landing = () => {
                   Simple Invoicing
                 </span>
               </div>
-              <p className="text-muted-foreground">
+              <p className="text-foreground/70">
                 Professional invoicing made simple.
               </p>
             </div>
             <div>
               <h3 className="font-semibold text-foreground mb-4">Product</h3>
-              <ul className="space-y-2 text-muted-foreground">
+              <ul className="space-y-2 text-foreground/70">
                 <li>
-                  <a href="#" className="hover:text-foreground">
+                  <a href="#" className="hover:text-white">
                     Features
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-foreground">
+                  <a href="#" className="hover:text-white">
                     Templates
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-foreground">
+                  <a href="#" className="hover:text-white">
                     Pricing
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-foreground">
+                  <a href="#" className="hover:text-white">
                     API
                   </a>
                 </li>
@@ -352,24 +352,24 @@ const Landing = () => {
             </div>
             <div>
               <h3 className="font-semibold text-foreground mb-4">Company</h3>
-              <ul className="space-y-2 text-muted-foreground">
+              <ul className="space-y-2 text-foreground/70">
                 <li>
-                  <a href="#" className="hover:text-foreground">
+                  <a href="#" className="hover:text-white">
                     About
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-foreground">
+                  <a href="#" className="hover:text-white">
                     Blog
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-foreground">
+                  <a href="#" className="hover:text-white">
                     Careers
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-foreground">
+                  <a href="#" className="hover:text-white">
                     Contact
                   </a>
                 </li>
@@ -377,32 +377,32 @@ const Landing = () => {
             </div>
             <div>
               <h3 className="font-semibold text-foreground mb-4">Support</h3>
-              <ul className="space-y-2 text-muted-foreground">
+              <ul className="space-y-2 text-foreground/70">
                 <li>
-                  <a href="#" className="hover:text-foreground">
+                  <a href="#" className_ ="hover:text-white">
                     Help Center
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-foreground">
+                  <a href="#" className="hover:text-white">
                     Documentation
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-foreground">
+                  <a href="#" className="hover:text-white">
                     Status
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-foreground">
+                  <a href="#" className="hover:text-white">
                     Privacy
                   </a>
                 </li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-border/50 mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 Simple Invoicing. All rights reserved.</p>
+          <div className="border-t border-border/50 mt-8 pt-8 text-center text-foreground/60">
+            <p>&copy; 2025 Simple Invoicing. All rights reserved.</p>
           </div>
         </div>
       </footer>

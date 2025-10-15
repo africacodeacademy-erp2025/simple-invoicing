@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import ProfileSetupModal from "@/components/ProfileSetupModal";
 import ThemeToggle from "@/components/ui/ThemeToggle";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const getPageTitle = (pathname: string) => {
   const routes: Record<string, string> = {
@@ -32,7 +32,7 @@ export const DashboardLayout = () => {
   );
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!profileLoading) {
