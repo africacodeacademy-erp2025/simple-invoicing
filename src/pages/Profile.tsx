@@ -259,20 +259,6 @@ export default function Profile() {
 
   return (
     <div className="space-y-6">
-      {/* Subscription & Billing */}
-      <Card className="shadow-soft">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            Subscription
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Choose a plan to unlock more features. Your current plan is shown below.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <PricingPlans />
-        </CardContent>
-      </Card>
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">Business Profile</h1>

@@ -1,17 +1,14 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   FileText,
   Users,
   Zap,
   Shield,
-  ArrowRight,
-  Star,
   BarChart3,
   Globe,
+  ArrowRight,
 } from "lucide-react";
 import PricingPlans from "@/components/PricingPlans";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -22,72 +19,54 @@ const Landing = () => {
       icon: <FileText className="h-8 w-8 text-primary" />,
       title: "Professional Invoices",
       description:
-        "Create stunning, professional invoices in minutes with our customizable templates.",
-      image: "https://images.pexels.com/photos/7172633/pexels-photo-7172633.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "Create stunning, professional invoices in minutes with customizable templates.",
+      image:
+        "https://images.pexels.com/photos/7172633/pexels-photo-7172633.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     },
     {
       icon: <Users className="h-8 w-8 text-primary" />,
       title: "Client Management",
       description:
-        "Keep track of all your clients and their information in one organized place.",
-      image: "https://images.pexels.com/photos/3184423/pexels-photo-3184423.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "Keep track of your clients and their information in one organized place.",
+      image:
+        "https://images.pexels.com/photos/3184423/pexels-photo-3184423.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     },
     {
       icon: <Zap className="h-8 w-8 text-primary" />,
       title: "Quick Generation",
       description:
-        "Generate and send invoices instantly with our streamlined workflow.",
-      image: "https://images.pexels.com/photos/5926382/pexels-photo-5926382.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "Generate and send invoices instantly with a streamlined workflow.",
+      image:
+        "https://images.pexels.com/photos/5926382/pexels-photo-5926382.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     },
     {
       icon: <Shield className="h-8 w-8 text-primary" />,
       title: "Secure & Reliable",
       description:
-        "Your data is protected with enterprise-grade security and 99.9% uptime.",
-      image: "https://images.pexels.com/photos/5380649/pexels-photo-5380649.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "Your data is protected with enterprise-grade security and reliability.",
+      image:
+        "https://images.pexels.com/photos/5380649/pexels-photo-5380649.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     },
     {
       icon: <BarChart3 className="h-8 w-8 text-primary" />,
       title: "Analytics Dashboard",
       description:
         "Track your business performance with detailed analytics and insights.",
-      image: "https://images.pexels.com/photos/3760067/pexels-photo-3760067.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+      image:
+        "https://images.pexels.com/photos/3760067/pexels-photo-3760067.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     },
     {
       icon: <Globe className="h-8 w-8 text-primary" />,
-      title: "Multi-Currency",
+      title: "Multi-Currency Support",
       description:
         "Support for multiple currencies and international business needs.",
-      image: "https://images.pexels.com/photos/4386466/pexels-photo-4386466.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
-    },
-  ];
-
-  const testimonials = [
-    {
-      name: "Sarah Johnson",
-      role: "Freelance Designer",
-      content:
-        "Simple Invoicing has transformed how I manage my business. Creating professional invoices has never been easier!",
-      rating: 5,
-    },
-    {
-      name: "Mike Chen",
-      role: "Small Business Owner",
-      content:
-        "The client management features are incredible. I can track everything in one place now.",
-      rating: 5,
-    },
-    {
-      name: "Emily Rodriguez",
-      role: "Consultant",
-      content:
-        "Beautiful templates and easy to use. My clients always compliment my professional invoices.",
-      rating: 5,
+      image:
+        "https://images.pexels.com/photos/4386466/pexels-photo-4386466.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       {/* Navigation */}
       <nav className="border-b border-border/50 bg-background/95 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -96,9 +75,7 @@ const Landing = () => {
               <div className="w-8 h-8 bg-primary-gradient rounded-lg flex items-center justify-center">
                 <FileText className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-foreground">
-                Simple Invoicing
-              </span>
+              <span className="text-xl font-bold">Simple Invoicing</span>
             </div>
             <div className="flex items-center gap-4">
               <ThemeToggle />
@@ -117,83 +94,65 @@ const Landing = () => {
 
       {/* Hero Section */}
       <section
-        className="relative py-20 lg:py-32 overflow-hidden bg-cover bg-center"
-        style={{ backgroundImage: "url('https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')" }}
+        className="relative py-20 lg:py-32 bg-cover bg-center text-center"
+        style={{
+          backgroundImage:
+            "url('https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')",
+        }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-primary/30" />
+        {/* Darker overlay for readability */}
+        <div className="absolute inset-0 bg-black/70 md:bg-black/60" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-              Create Professional
-              <span className="bg-primary-gradient bg-clip-text text-transparent">
-                {" "}
-                Invoices{" "}
-              </span>
-              in Minutes
-            </h1>
-            <p className="text-xl text-white/90 mb-8 max-w-3xl mx-auto">
-              Streamline your invoicing process with our powerful, easy-to-use
-              platform. Generate beautiful invoices, manage clients, and get
-              paid faster.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/signup">
-                <Button
-                  size="lg"
-                  className="bg-primary-gradient hover:opacity-90 text-lg px-8 py-6"
-                >
-                  Start Free Trial
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6">
-                Watch Demo
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+            Create Professional{" "}
+            <span className="bg-primary-gradient bg-clip-text text-transparent">
+              Invoices
+            </span>{" "}
+            in Minutes
+          </h1>
+          <p className="text-xl text-white/90 mb-8 max-w-3xl mx-auto">
+            Streamline your invoicing process with our powerful and easy-to-use
+            platform.
+          </p>
+          <div className="flex justify-center">
+            <Link to="/signup">
+              <Button
+                size="lg"
+                className="bg-primary-gradient hover:opacity-90 text-lg px-8 py-6"
+              >
+                Get Started
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-            </div>
-            <p className="text-sm text-white/70 mt-4">
-              No credit card required • 14-day free trial
-            </p>
+            </Link>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
       <section className="py-20 bg-muted/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Everything you need to manage invoices
-            </h2>
-            <p className="text-xl text-foreground/80 max-w-2xl mx-auto">
-              Powerful features designed to help you create, manage, and track
-              your invoices efficiently.
-            </p>
-          </div>
-          <div className="space-y-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-12">
+            Everything You Need to Manage Invoices
+          </h2>
+
+          {/* Uniform Grid Layout */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
             {features.map((feature, index) => (
               <div
                 key={index}
-                className={`flex flex-col md:flex-row items-center gap-8 ${(
-                  index % 2 === 1 ? "md:flex-row-reverse" : ""
-                )}`}
+                className="bg-background rounded-2xl shadow-sm border border-border/50 overflow-hidden hover:shadow-md transition-shadow duration-300"
               >
-                <div className="md:w-1/2">
-                  <img
-                    src={feature.image}
-                    alt={feature.title}
-                    className="rounded-lg shadow-lg aspect-video object-cover"
-                  />
-                </div>
-                <div className="md:w-1/2">
-                  <div className="flex items-center gap-4 mb-4">
+                <img
+                  src={feature.image}
+                  alt={feature.title}
+                  className="w-full h-48 object-cover"
+                />
+                <div className="p-6 text-left">
+                  <div className="flex items-center gap-3 mb-3">
                     {feature.icon}
-                    <h3 className="text-2xl font-semibold text-foreground">
-                      {feature.title}
-                    </h3>
+                    <h3 className="text-xl font-semibold">{feature.title}</h3>
                   </div>
-                  <p className="text-lg text-foreground/70">
-                    {feature.description}
-                  </p>
+                  <p className="text-foreground/70">{feature.description}</p>
                 </div>
               </div>
             ))}
@@ -201,209 +160,53 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold text-primary mb-2">10K+</div>
-              <div className="text-foreground/70">Happy Customers</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-primary mb-2">1M+</div>
-              <div className="text-foreground/70">Invoices Created</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-primary mb-2">99.9%</div>
-              <div className="text-foreground/70">Uptime</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Pricing Section */}
-      <section className="py-20 bg-muted/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Simple pricing</h2>
-            <p className="text-xl text-foreground/80 max-w-2xl mx-auto">Choose the plan that fits your stage. Start free, upgrade as you grow.</p>
-          </div>
+      <section className="py-20 bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Simple Pricing
+          </h2>
+          <p className="text-xl text-foreground/80 mb-16">
+            Choose the plan that fits your stage. Start free, upgrade as you
+            grow.
+          </p>
           <PricingPlans />
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              What our customers say
-            </h2>
-            <p className="text-xl text-foreground/80">
-              Join thousands of satisfied users who trust Simple Invoicing
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="p-6">
-                <CardContent className="p-0">
-                  <div className="flex items-center gap-1 mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className="h-4 w-4 fill-yellow-400 text-yellow-400"
-                      />
-                    ))}
-                  </div>
-                  <p className="text-foreground/70 mb-4 italic">
-                    \"{testimonial.content}\"
-                  </p>
-                  <div>
-                    <div className="font-semibold text-foreground">
-                      {testimonial.name}
-                    </div>
-                    <div className="text-sm text-foreground/60">
-                      {testimonial.role}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </div>
       </section>
 
       {/* CTA Section */}
       <section
         className="relative py-20 bg-cover bg-center"
-        style={{ backgroundImage: "url('https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')" }}
+        style={{
+          backgroundImage:
+            "url('https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')",
+        }}
       >
-        <div className="absolute inset-0 bg-primary/80" />
+        {/* Darker overlay for contrast */}
+        <div className="absolute inset-0 bg-black/80 md:bg-black/70" />
         <div className="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Ready to streamline your invoicing?
           </h2>
           <p className="text-xl text-white/80 mb-8">
-            Join thousands of businesses already using Simple Invoicing to
-            manage their invoices.
+            Join thousands of businesses already using Simple Invoicing.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/signup">
-              <Button
-                size="lg"
-                className="bg-white text-primary hover:bg-white/90 text-lg px-8 py-6"
-              >
-                Get Started Free
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
+          <Link to="/signup">
             <Button
               size="lg"
-              variant="outline"
-              className="text-lg px-8 py-6 border-white/50 text-white hover:bg-white/10"
+              className="bg-black text-primary hover:bg-white/90 text-lg px-8 py-6"
             >
-              Contact Sales
+              Get Started
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-          </div>
+          </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-muted/20 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-primary-gradient rounded-lg flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-white" />
-                </div>
-                <span className="text-xl font-bold text-foreground">
-                  Simple Invoicing
-                </span>
-              </div>
-              <p className="text-foreground/70">
-                Professional invoicing made simple.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground mb-4">Product</h3>
-              <ul className="space-y-2 text-foreground/70">
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Features
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Templates
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Pricing
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    API
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground mb-4">Company</h3>
-              <ul className="space-y-2 text-foreground/70">
-                <li>
-                  <a href="#" className="hover:text-white">
-                    About
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Blog
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Careers
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Contact
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-foreground mb-4">Support</h3>
-              <ul className="space-y-2 text-foreground/70">
-                <li>
-                  <a href="#" className_ ="hover:text-white">
-                    Help Center
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Documentation
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Status
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Privacy
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-border/50 mt-8 pt-8 text-center text-foreground/60">
-            <p>&copy; 2025 Simple Invoicing. All rights reserved.</p>
-          </div>
+      <footer className="border-t border-border/50 bg-muted/20 py-6">
+        <div className="text-center text-foreground/60">
+          <p>&copy; 2025 Simple Invoicing. All rights reserved.</p>
         </div>
       </footer>
     </div>

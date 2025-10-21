@@ -49,9 +49,13 @@ export const DashboardLayout = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-background">
-      {/* Static sidebar for desktop */}
-      {!isMobile && <AppSidebar isOpen={!isMobile} />}
+    <div className="min-h-screen w-full flex items-start bg-background">
+      {/* Sticky sidebar for desktop */}
+      {!isMobile && (
+        <aside className="sticky top-0 h-screen">
+          <AppSidebar isOpen={!isMobile} />
+        </aside>
+      )}
 
       {/* Mobile sidebar with overlay */}
       {isMobile && isMobileSidebarOpen && (
