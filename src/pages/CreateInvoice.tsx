@@ -1,32 +1,43 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileText, Eye, EyeOff, Palette, Save } from "lucide-react";
+import { Download, FileText, Eye, Palette, Save } from "lucide-react";
 import { InvoiceForm } from "@/components/InvoiceForm";
 import { InvoicePreview } from "@/components/InvoicePreview";
 import { TemplateSelector } from "@/components/TemplateSelector";
-import { InvoiceData, currencies } from "@/types/invoice";
-import { InvoiceTemplate } from "@/types/templates";
+import { InvoiceData } from "@/types/invoice";
+import { InvoiceTemplate, TemplateInfo } from "@/types/templates";
 import { generatePDF } from "@/utils/pdfGenerator";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { InvoiceController } from "@/controllers/invoice.controller";
 import { useNavigate } from "react-router-dom";
-
-// Paywall imports
 import { usePlanAccess } from "@/hooks/usePlanAccess";
 import { PaywallModal } from "@/components/PaywallModal";
 import { ProtectedInvoiceController } from "@/controllers/invoice.controller.protected";
+import { MinimalTemplate } from "@/components/templates/MinimalTemplate";
+import { ClassicTemplate } from "@/components/templates/ClassicTemplate";
+import { ModernTemplate } from "@/components/templates/ModernTemplate";
+import { CorporateTemplate } from "@/components/templates/CorporateTemplate";
+import { CreativeTemplate } from "@/components/templates/CreativeTemplate";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+const availableTemplates = [
+  { id: InvoiceTemplate.MINIMAL, name: "Minimal", component: MinimalTemplate, isPremium: true },
+  { id: InvoiceTemplate.CLASSIC, name: "Classic", component: ClassicTemplate, isPremium: false },
+  { id: InvoiceTemplate.MODERN, name: "Modern", component: ModernTemplate, isPremium: false },
+  { id: InvoiceTemplate.CORPORATE, name: "Corporate", component: CorporateTemplate, isPremium: true },
+  { id: InvoiceTemplate.CREATIVE, name: "Creative", component: CreativeTemplate, isPremium: true },
+];
 
 const CreateInvoice = () => {
-  const [showPreview, setShowPreview] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>(InvoiceTemplate.MODERN);
   const invoicePreviewRef = useRef<HTMLDivElement>(null);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
-  // Paywall state
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallFeature, setPaywallFeature] = useState('');
   const [paywallPlan, setPaywallPlan] = useState<'pro' | 'business' | 'enterprise'>('pro');
@@ -35,8 +46,7 @@ const CreateInvoice = () => {
   const { profile, profileLoading } = useProfile(user?.id || null);
   const navigate = useNavigate();
 
-  // Plan access
-  const { canExportPDFEffective, canUseRecurringEffective, effectivePlanLimits } = usePlanAccess();
+  const { canUsePremiumTemplates, canExportPDFEffective, canUseRecurringEffective, effectivePlanLimits } = usePlanAccess();
 
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     invoiceNumber: "",
@@ -119,37 +129,6 @@ const CreateInvoice = () => {
     }
   }, [profile, profileLoading, generateInvoiceNumber]);
 
-  const handlePrefillFromProfile = () => {
-    if (profile) {
-      setInvoiceData((prevData) => ({
-        ...prevData,
-        invoiceNumber: generateInvoiceNumber(profile.invoice_prefix),
-        currency: profile.default_currency || "USD",
-        taxRate: profile.default_tax_rate || 0,
-        businessInfo: {
-          ...prevData.businessInfo,
-          name: profile.business_name || prevData.businessInfo.name,
-          email: profile.email || prevData.businessInfo.email,
-          phone: profile.phone || prevData.businessInfo.phone,
-          address: profile.address || prevData.businessInfo.address,
-          logo: profile.logo_url || prevData.businessInfo.logo,
-        },
-        bankingInfo: {
-          ...prevData.bankingInfo,
-          bankName: profile.bank_name || prevData.bankingInfo.bankName,
-          accountNumber: profile.account_number || prevData.bankingInfo.accountNumber,
-          swiftCode: profile.swift_code || prevData.bankingInfo.swiftCode,
-          iban: profile.iban || prevData.bankingInfo.iban,
-        },
-      }));
-      toast({
-        title: "Success!",
-        description: "Business info updated from your profile.",
-      });
-    }
-  };
-
-  // PDF Export
   const handleGeneratePDF = async () => {
     if (!canExportPDFEffective) {
       toast({ title: "Premium Feature", description: "PDF export requires Pro plan", variant: "destructive" });
@@ -174,7 +153,6 @@ const CreateInvoice = () => {
     }
   };
 
-  // Invoice creation
   const handleCreateInvoice = async () => {
     if (!user?.id) {
       toast({ title: "Error", description: "You must be logged in.", variant: "destructive" });
@@ -218,30 +196,29 @@ const CreateInvoice = () => {
       setIsSaving(false);
     }
   };
+  
+  const handleSelectTemplate = (template: TemplateInfo) => {
+    if (template.isPremium && !canUsePremiumTemplates) {
+      toast({ title: "Premium Feature", description: "This template requires a Pro plan.", variant: "destructive" });
+      setPaywallFeature("Premium Templates");
+      setPaywallPlan("pro");
+      setShowPaywall(true);
+    } else {
+      setSelectedTemplate(template.id);
+    }
+  };
 
-  const selectedCurrency = currencies.find((c) => c.code === invoiceData.currency);
+  const SelectedTemplateComponent = availableTemplates.find(t => t.id === selectedTemplate)?.component || ModernTemplate;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Create Invoice</h1>
           <p className="text-muted-foreground mt-1">Create professional invoices in minutes</p>
-          {profileLoading && <p className="text-sm text-blue-600 mt-2">Loading your business profile...</p>}
-          {effectivePlanLimits?.maxInvoicesPerMonth !== undefined &&
-           effectivePlanLimits.maxInvoicesPerMonth !== Infinity && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Plan limit: {effectivePlanLimits.maxInvoicesPerMonth} invoices/month
-            </p>
-          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)} className="md:hidden">
-            {showPreview ? <><EyeOff className="h-4 w-4 mr-1"/>Hide Preview</> : <><Eye className="h-4 w-4 mr-1"/>Show Preview</>}
-          </Button>
-
           <Button onClick={handleCreateInvoice} disabled={isSaving} variant="outline" className="hover:bg-green-50 hover:border-green-300 hover:text-green-700">
             {isSaving ? <> <div className="animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent mr-2"/>Creating...</> : <><Save className="h-4 w-4 mr-2"/>Create Invoice</>}
           </Button>
@@ -256,52 +233,81 @@ const CreateInvoice = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        {/* Form Section */}
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <div className="lg:col-span-3 space-y-6">
           <div className="flex items-center gap-3">
             <FileText className="h-6 w-6 text-primary"/>
             <h2 className="text-2xl font-semibold">Invoice Details</h2>
           </div>
 
           <InvoiceForm invoiceData={invoiceData} onUpdateInvoiceData={handleUpdateInvoiceData} userId={user?.id} profile={profile}/>
-
-          <Card className="shadow-soft bg-background/70 dark:bg-background/90">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Palette className="h-5 w-5 text-primary"/>
-                Template Selection
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TemplateSelector selectedTemplate={selectedTemplate} onSelectTemplate={setSelectedTemplate}/>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Preview Section */}
-        {showPreview && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Eye className="h-6 w-6 text-primary"/>
-                <h2 className="text-2xl font-semibold">Live Preview</h2>
-              </div>
-
-              {invoiceData.total > 0 && (
-                <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Total Amount</p>
-                  <p className="text-2xl font-bold text-primary">{selectedCurrency?.symbol}{invoiceData.total.toFixed(2)}</p>
+        <div className="lg:col-span-2 space-y-6">
+          <div className="sticky top-6 space-y-6">
+            <Card>
+              <CardHeader className="p-4">
+                <CardTitle className="flex items-center gap-3">
+                  <Eye className="h-5 w-5 text-primary"/>
+                  Live Preview
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div
+                    className="h-[420px] bg-gray-100 dark:bg-gray-800 rounded-b-lg overflow-hidden relative group cursor-pointer"
+                    onClick={() => setIsPreviewModalOpen(true)}
+                >
+                    <div className="absolute top-1/2 left-1/2 pointer-events-none transform -translate-x-1/2 -translate-y-1/2 scale-[0.5] origin-center">
+                        <div className="w-[800px] bg-white shadow-2xl">
+                            <SelectedTemplateComponent invoiceData={invoiceData} />
+                        </div>
+                    </div>
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="text-white font-semibold flex items-center gap-2 bg-gray-900/50 px-4 py-2 rounded-lg">
+                            <Eye className="h-5 w-5" />
+                            View Full Preview
+                        </div>
+                    </div>
                 </div>
-              )}
-            </div>
+              </CardContent>
+            </Card>
 
-            <div className="sticky top-6">
-              <InvoicePreview ref={invoicePreviewRef} invoiceData={invoiceData} template={selectedTemplate}/>
-            </div>
+            <Card className="shadow-soft bg-background/70 dark:bg-background/90">
+              <CardHeader className="p-4">
+                <CardTitle className="flex items-center gap-3">
+                  <Palette className="h-5 w-5 text-primary"/>
+                  Template Selection
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <TemplateSelector selectedTemplate={selectedTemplate} onSelectTemplate={handleSelectTemplate}/>
+              </CardContent>
+            </Card>
           </div>
-        )}
+        </div>
+      </div>
+
+      <Dialog open={isPreviewModalOpen} onOpenChange={setIsPreviewModalOpen}>
+        <DialogContent className="max-w-4xl h-[90vh] p-0">
+            <DialogHeader className="p-4 border-b">
+                <DialogTitle>Invoice Preview</DialogTitle>
+            </DialogHeader>
+            <div className="h-full overflow-y-auto bg-gray-200 p-8">
+                <InvoicePreview
+                    invoiceData={invoiceData}
+                    template={selectedTemplate}
+                />
+            </div>
+        </DialogContent>
+      </Dialog>
+      
+      <div className="hidden">
+        <div ref={invoicePreviewRef}>
+            <InvoicePreview
+                invoiceData={invoiceData}
+                template={selectedTemplate}
+            />
+        </div>
       </div>
 
       <PaywallModal isOpen={showPaywall} onClose={() => setShowPaywall(false)} feature={paywallFeature} requiredPlan={paywallPlan}/>
