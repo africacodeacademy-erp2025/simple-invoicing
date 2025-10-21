@@ -1,253 +1,90 @@
-import React, { forwardRef } from "react";
-import { InvoiceData, currencies } from "@/types/invoice";
+import React from "react";
+import { InvoiceData } from "@/types/invoice";
 
 interface MinimalTemplateProps {
   invoiceData: InvoiceData;
+  isPremiumUser?: boolean;
 }
 
-export const MinimalTemplate = forwardRef<HTMLDivElement, MinimalTemplateProps>(
-  ({ invoiceData }, ref) => {
-    const selectedCurrency = currencies.find(
-      (c) => c.code === invoiceData.currency
-    );
-    const currencySymbol = selectedCurrency?.symbol || "$";
+export const MinimalTemplate: React.FC<MinimalTemplateProps> = ({ invoiceData }) => {
+  const { businessInfo, clientInfo, lineItems, total, currency, invoiceNumber, date, dueDate } = invoiceData;
 
-    const formatDate = (dateString: string) => {
-      if (!dateString) return "";
-      return new Date(dateString).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-    };
-
-    const formatCurrency = (amount: number) => {
-      return `${currencySymbol}${amount.toFixed(2)}`;
-    };
-
-    return (
-      <div ref={ref} className="bg-white p-12 space-y-12 min-h-[800px]">
-        {/* Header */}
-        <div className="flex justify-between items-start">
-          <div className="space-y-3">
-            {invoiceData.businessInfo.logo && (
-              <div className="w-24 h-12 mb-6">
-                <img
-                  src={
-                    typeof invoiceData.businessInfo.logo === "string"
-                      ? invoiceData.businessInfo.logo
-                      : URL.createObjectURL(invoiceData.businessInfo.logo)
-                  }
-                  alt="Logo"
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            )}
-            <h1 className="text-2xl font-light text-gray-900 tracking-wide">
-              {invoiceData.businessInfo.name || "Business Name"}
-            </h1>
-            <div className="text-sm text-gray-500 space-y-1 leading-relaxed">
-              {invoiceData.businessInfo.address && (
-                <div className="whitespace-pre-line">
-                  {invoiceData.businessInfo.address}
-                </div>
-              )}
-              {invoiceData.businessInfo.email && (
-                <div>{invoiceData.businessInfo.email}</div>
-              )}
-              {invoiceData.businessInfo.phone && (
-                <div>{invoiceData.businessInfo.phone}</div>
-              )}
-            </div>
-          </div>
-
-          <div className="text-right space-y-2">
-            <div className="text-3xl font-light text-gray-900 tracking-wider">
-              INVOICE
-            </div>
-            <div className="text-gray-500">#{invoiceData.invoiceNumber}</div>
-          </div>
-        </div>
-
-        {/* Invoice Info */}
-        <div className="grid grid-cols-2 gap-12">
-          <div className="space-y-6">
+  return (
+    <div className="w-[800px] bg-white p-8 font-sans">
+        <div className="flex justify-between items-start mb-8">
             <div>
-              <div className="text-xs uppercase tracking-wider text-gray-400 mb-2">
-                Bill To
-              </div>
-              <div className="space-y-1">
-                <div className="font-medium text-gray-900">
-                  {invoiceData.clientInfo.name}
-                </div>
-                {invoiceData.clientInfo.email && (
-                  <div className="text-sm text-gray-600">
-                    {invoiceData.clientInfo.email}
-                  </div>
-                )}
-                {invoiceData.clientInfo.address && (
-                  <div className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">
-                    {invoiceData.clientInfo.address}
-                  </div>
-                )}
-              </div>
+            <h1 className="text-3xl font-bold text-gray-800">INVOICE</h1>
+            <p className="text-gray-500">{invoiceNumber}</p>
             </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-xs uppercase tracking-wider text-gray-400">
-                Issue Date
-              </span>
-              <span className="text-sm">{formatDate(invoiceData.date)}</span>
+            <div className="text-right">
+            <h2 className="text-2xl font-semibold text-gray-700">{businessInfo.name}</h2>
+            <p className="text-gray-500">{businessInfo.address}</p>
+            <p className="text-gray-500">{businessInfo.email}</p>
+            <p className="text-gray-500">{businessInfo.phone}</p>
             </div>
-            <div className="flex justify-between">
-              <span className="text-xs uppercase tracking-wider text-gray-400">
-                Due Date
-              </span>
-              <span className="text-sm">{formatDate(invoiceData.dueDate)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-xs uppercase tracking-wider text-gray-400">
-                Currency
-              </span>
-              <span className="text-sm">{invoiceData.currency}</span>
-            </div>
-          </div>
         </div>
 
-        {/* Line Items */}
-        {invoiceData.lineItems.length > 0 && (
-          <div className="space-y-6">
-            <div className="border-t border-gray-200 pt-6">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left pb-4 text-xs uppercase tracking-wider text-gray-400 font-normal">
-                      Description
-                    </th>
-                    <th className="text-right pb-4 text-xs uppercase tracking-wider text-gray-400 font-normal w-16">
-                      Qty
-                    </th>
-                    <th className="text-right pb-4 text-xs uppercase tracking-wider text-gray-400 font-normal w-24">
-                      Rate
-                    </th>
-                    <th className="text-right pb-4 text-xs uppercase tracking-wider text-gray-400 font-normal w-32">
-                      Amount
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="space-y-4">
-                  {invoiceData.lineItems.map((item, index) => (
-                    <tr key={item.id} className="border-b border-gray-100">
-                      <td className="py-4 text-sm leading-relaxed">
-                        <div className="whitespace-pre-line">
-                          {item.description}
-                        </div>
-                      </td>
-                      <td className="text-right py-4 text-sm">
-                        {item.quantity}
-                      </td>
-                      <td className="text-right py-4 text-sm">
-                        {formatCurrency(item.rate)}
-                      </td>
-                      <td className="text-right py-4 text-sm font-medium">
-                        {formatCurrency(item.amount)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        <div className="grid grid-cols-2 gap-8 mb-8">
+            <div>
+            <h3 className="font-semibold text-gray-600 mb-2">BILL TO</h3>
+            <p className="text-gray-800 font-medium">{clientInfo.name}</p>
+            <p className="text-gray-500">{clientInfo.address}</p>
+            <p className="text-gray-500">{clientInfo.email}</p>
             </div>
-
-            {/* Totals */}
-            <div className="flex justify-end pt-6">
-              <div className="w-80 space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span>Subtotal</span>
-                  <span>{formatCurrency(invoiceData.subtotal)}</span>
-                </div>
-
-                {invoiceData.discountRate > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Discount ({invoiceData.discountRate}%)</span>
-                    <span>-{formatCurrency(invoiceData.discountAmount)}</span>
-                  </div>
-                )}
-
-                {invoiceData.taxRate > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span>Tax ({invoiceData.taxRate}%)</span>
-                    <span>{formatCurrency(invoiceData.taxAmount)}</span>
-                  </div>
-                )}
-
-                <div className="border-t border-gray-200 pt-3">
-                  <div className="flex justify-between text-lg font-light">
-                    <span>Total</span>
-                    <span>{formatCurrency(invoiceData.total)}</span>
-                  </div>
-                </div>
-              </div>
+            <div className="text-right">
+            <div className="mb-2">
+                <span className="font-semibold text-gray-600">Issue Date: </span>
+                <span className="text-gray-800">{new Date(date).toLocaleDateString()}</span>
             </div>
-          </div>
-        )}
-
-        {/* Banking Information */}
-        {invoiceData.bankingInfo.bankName && (
-          <div className="border-t border-gray-200 pt-8 space-y-3">
-            <div className="text-xs uppercase tracking-wider text-gray-400">
-              Banking Information
+            <div>
+                <span className="font-semibold text-gray-600">Due Date: </span>
+                <span className="text-gray-800">{new Date(dueDate).toLocaleDateString()}</span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium text-gray-600">Bank:</span>
-                <p className="font-medium text-gray-900">
-                  {invoiceData.bankingInfo.bankName}
-                </p>
-              </div>
-              <div>
-                <span className="font-medium text-gray-600">
-                  Account Number:
+            </div>
+        </div>
+
+        <table className="w-full mb-8 text-left">
+            <thead>
+            <tr className="bg-gray-100 text-gray-600 uppercase text-sm">
+                <th className="p-3">Description</th>
+                <th className="p-3 text-right">Quantity</th>
+                <th className="p-3 text-right">Rate</th>
+                <th className="p-3 text-right">Amount</th>
+            </tr>
+            </thead>
+            <tbody>
+            {lineItems.map((item) => (
+                <tr key={item.id} className="border-b border-gray-100">
+                <td className="p-3">{item.description}</td>
+                <td className="p-3 text-right">{item.quantity}</td>
+                <td className="p-3 text-right">{item.rate.toFixed(2)}</td>
+                <td className="p-3 text-right">{(item.quantity * item.rate).toFixed(2)}</td>
+                </tr>
+            ))}
+            </tbody>
+        </table>
+
+        <div className="flex justify-end mb-8">
+            <div className="w-full max-w-xs">
+            <div className="flex justify-between py-2">
+                <span className="font-semibold text-gray-600">Subtotal</span>
+                <span className="text-gray-800">
+                {lineItems.reduce((acc, item) => acc + item.amount, 0).toFixed(2)}
                 </span>
-                <p className="font-medium text-gray-900">
-                  {invoiceData.bankingInfo.accountNumber}
-                </p>
-              </div>
-              {invoiceData.bankingInfo.swiftCode && (
-                <div>
-                  <span className="font-medium text-gray-600">SWIFT Code:</span>
-                  <p className="font-medium text-gray-900">
-                    {invoiceData.bankingInfo.swiftCode}
-                  </p>
-                </div>
-              )}
-              {invoiceData.bankingInfo.iban && (
-                <div>
-                  <span className="font-medium text-gray-600">IBAN:</span>
-                  <p className="font-medium text-gray-900">
-                    {invoiceData.bankingInfo.iban}
-                  </p>
-                </div>
-              )}
             </div>
-          </div>
-        )}
+            <div className="flex justify-between py-2">
+                <span className="font-semibold text-gray-600">Total</span>
+                <span className="text-2xl font-bold text-gray-900">
+                {currency} {total.toFixed(2)}
+                </span>
+            </div>
+            </div>
+        </div>
 
-        {/* Notes */}
-        {invoiceData.notes && (
-          <div className="border-t border-gray-200 pt-8 space-y-3">
-            <div className="text-xs uppercase tracking-wider text-gray-400">
-              Notes
-            </div>
-            <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-              {invoiceData.notes}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-);
-
-MinimalTemplate.displayName = "MinimalTemplate";
+        <div className="mt-8">
+            <h3 className="font-semibold text-gray-600 mb-2">Notes</h3>
+            <p className="text-gray-500 text-sm">{invoiceData.notes}</p>
+        </div>
+    </div>
+  );
+};

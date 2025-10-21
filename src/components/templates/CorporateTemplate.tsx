@@ -28,7 +28,7 @@ export const CorporateTemplate = forwardRef<
   };
 
   return (
-    <div ref={ref} className="bg-white">
+    <div ref={ref} className="w-[800px] bg-white">
       {/* Header Bar */}
       <div className="bg-gray-900 h-2"></div>
 

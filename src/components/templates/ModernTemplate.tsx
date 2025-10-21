@@ -28,7 +28,7 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
     };
 
     return (
-      <Card className="shadow-medium bg-card-gradient" ref={ref}>
+      <Card className="w-[800px] shadow-medium bg-card-gradient" ref={ref}>
         <CardContent className="p-8 space-y-8">
           {/* Header */}
           <div className="flex justify-between items-start">

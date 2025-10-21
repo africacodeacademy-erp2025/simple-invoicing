@@ -115,7 +115,7 @@ export const DashboardLayout = () => {
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-6 bg-muted/20">
+        <main className="flex-1 p-4 lg:p-6 bg-muted/20 overflow-x-hidden">
           <Outlet />
         </main>
       </div>
