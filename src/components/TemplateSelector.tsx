@@ -1,7 +1,6 @@
 import React from "react";
 import { InvoiceTemplate, TemplateInfo } from "@/types/templates";
-import { Check, Lock, Star } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Check, Lock } from "lucide-react";
 import { usePlanAccess } from "@/hooks/usePlanAccess";
 
 interface TemplateSelectorProps {
@@ -65,9 +64,6 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 isSelected
                   ? "border-primary ring-2 ring-primary/50"
                   : "border-border group-hover:border-muted-foreground"
-              } ${
-                isLocked ? "filter blur-sm brightness-90"
- :' '
               }`}
             >
               {/* Skeleton representation */}
@@ -85,15 +81,15 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             )}
 
             {isLocked && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50">
-                    <Lock className="h-6 w-6 text-white/80" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 rounded-md">
+                    <Lock className="h-5 w-5 text-white/80" />
                     <span className="text-xs font-bold text-white/90 mt-1">PRO</span>
                 </div>
             )}
 
             <p
               className={`text-center text-xs font-medium mt-1.5 transition-colors ${
-                isSelected ? "text-primary" : "text-muted-foreground"
+                isSelected && !isLocked ? "text-primary" : "text-muted-foreground"
               }`}
             >
               {template.name}

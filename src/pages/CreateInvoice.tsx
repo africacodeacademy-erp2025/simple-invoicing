@@ -129,7 +129,19 @@ const CreateInvoice = () => {
     }
   }, [profile, profileLoading, generateInvoiceNumber]);
 
+  const handleSelectTemplate = (template: TemplateInfo) => {
+    setSelectedTemplate(template.id);
+  };
+
   const handleGeneratePDF = async () => {
+    const selectedTemplateInfo = availableTemplates.find(t => t.id === selectedTemplate);
+    if (selectedTemplateInfo?.isPremium && !canUsePremiumTemplates) {
+      toast({ title: "Premium Feature", description: "This template requires a Pro plan.", variant: "destructive" });
+      setPaywallFeature("Premium Templates");
+      setPaywallPlan("pro");
+      setShowPaywall(true);
+      return;
+    }
     if (!canExportPDFEffective) {
       toast({ title: "Premium Feature", description: "PDF export requires Pro plan", variant: "destructive" });
       setPaywallFeature("PDF Export");
@@ -156,6 +168,15 @@ const CreateInvoice = () => {
   const handleCreateInvoice = async () => {
     if (!user?.id) {
       toast({ title: "Error", description: "You must be logged in.", variant: "destructive" });
+      return;
+    }
+
+    const selectedTemplateInfo = availableTemplates.find(t => t.id === selectedTemplate);
+    if (selectedTemplateInfo?.isPremium && !canUsePremiumTemplates) {
+      toast({ title: "Premium Feature", description: "This template requires a Pro plan.", variant: "destructive" });
+      setPaywallFeature("Premium Templates");
+      setPaywallPlan("pro");
+      setShowPaywall(true);
       return;
     }
 
@@ -197,17 +218,6 @@ const CreateInvoice = () => {
     }
   };
   
-  const handleSelectTemplate = (template: TemplateInfo) => {
-    if (template.isPremium && !canUsePremiumTemplates) {
-      toast({ title: "Premium Feature", description: "This template requires a Pro plan.", variant: "destructive" });
-      setPaywallFeature("Premium Templates");
-      setPaywallPlan("pro");
-      setShowPaywall(true);
-    } else {
-      setSelectedTemplate(template.id);
-    }
-  };
-
   const SelectedTemplateComponent = availableTemplates.find(t => t.id === selectedTemplate)?.component || ModernTemplate;
 
   return (
