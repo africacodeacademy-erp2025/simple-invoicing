@@ -16,7 +16,7 @@ export const CreativeTemplate = forwardRef<
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDate-String("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -28,7 +28,7 @@ export const CreativeTemplate = forwardRef<
   };
 
   return (
-    <div ref={ref} className="bg-white relative overflow-hidden">
+    <div ref={ref} className="w-[800px] bg-white relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full -translate-y-32 translate-x-32"></div>
       <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-green-500/10 to-blue-500/10 rounded-full translate-y-24 -translate-x-24"></div>

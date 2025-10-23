@@ -1,6 +1,5 @@
 import React, { forwardRef, useState } from "react";
 import { InvoiceData, currencies } from "@/types/invoice";
-import StripeCheckout from "../payments/StripeCheckout";
 
 interface ClassicTemplateProps {
   invoiceData: InvoiceData;
@@ -8,9 +7,6 @@ interface ClassicTemplateProps {
 
 export const ClassicTemplate = forwardRef<HTMLDivElement, ClassicTemplateProps>(
   ({ invoiceData }, ref) => {
-    // Dummy premium state for testing Stripe integration
-    const [hasPremiumAccess, setHasPremiumAccess] = useState(false);
-
     const selectedCurrency = currencies.find(
       (c) => c.code === invoiceData.currency
     );
@@ -29,40 +25,10 @@ export const ClassicTemplate = forwardRef<HTMLDivElement, ClassicTemplateProps>(
       return `${currencySymbol}${amount.toFixed(2)}`;
     };
 
-    // Show Stripe button and simulate button if not premium
-    if (!hasPremiumAccess) {
-      return (
-        <div className="flex flex-col items-center justify-center p-8 border-2 border-yellow-500 bg-yellow-50 rounded">
-          <h2 className="text-2xl font-bold mb-4 text-yellow-800">
-            Classic Template is a Premium Feature
-          </h2>
-          <p className="mb-6 text-yellow-700">
-            Unlock this professional invoice template for only $1.00 (test)!
-          </p>
-          <StripeCheckout
-            amount={100} // $1.00 in cents for test
-            description="Unlock Classic Invoice Template"
-          />
-          <button
-            className="mt-4 px-4 py-2 bg-green-600 text-white rounded"
-            onClick={() => setHasPremiumAccess(true)}
-            type="button"
-          >
-            Simulate Payment Success (Dev Only)
-          </button>
-          <p className="mt-4 text-xs text-gray-500 text-center">
-            After a real payment, you would be redirected back to the app.<br />
-            For now, use the button above to simulate unlocking this template.
-          </p>
-        </div>
-      );
-    }
-
-    // Render the actual template if premium access is granted
     return (
       <div
         ref={ref}
-        className="bg-white p-8 space-y-6 border-2 border-gray-900"
+        className="w-[800px] bg-white p-8 space-y-6 border-2 border-gray-900"
         style={{ fontFamily: "serif" }}
       >
         {/* Letterhead */}

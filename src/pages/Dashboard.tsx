@@ -27,7 +27,7 @@ export default function Dashboard() {
     oneTimeInvoices: 0,
     totalClients: 0,
   });
-  const [recentInvoices, setRecentInvoices] = useState([]);
+  const [recentInvoices, setRecentInvoices] = useState<any[]>([]);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -44,12 +44,8 @@ export default function Dashboard() {
           const invoices = invoicesResponse.data || [];
           const clients = clientsResponse.data || [];
 
-          const recurringCount = invoices.filter(
-            (inv) => inv.is_recurring
-          ).length;
-          const oneTimeCount = invoices.filter(
-            (inv) => !inv.is_recurring
-          ).length;
+          const recurringCount = invoices.filter((inv) => inv.is_recurring).length;
+          const oneTimeCount = invoices.filter((inv) => !inv.is_recurring).length;
 
           setStats({
             totalInvoices: invoices.length,
@@ -59,8 +55,8 @@ export default function Dashboard() {
           });
 
           const recent = invoices
-            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-            .slice(0, 4)
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 5)
             .map((invoice) => ({
               id: invoice.id,
               invoiceNumber: invoice.invoice_number,
@@ -89,20 +85,18 @@ export default function Dashboard() {
   }, [user?.id]);
 
   return (
-    <div className="space-y-8 max-w-7xl">
-      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-6">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold text-primary">
-            Dashboard
-          </h1>
-          <p className="text-muted-foreground text-lg">
+    <div className="space-y-6 max-w-7xl">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold text-primary">Dashboard</h1>
+          <p className="text-muted-foreground text-base">
             Welcome back! Here's your business overview.
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Link to="/app/create-invoice">
-            <Button className="bg-primary hover:shadow-lg transition-all duration-300 hover:scale-105 shadow-md">
+            <Button>
               <Plus className="h-4 w-4 mr-2" />
               Create Invoice
             </Button>
@@ -110,123 +104,49 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-card-gradient shadow-medium hover:shadow-large transition-all duration-300 border-0 animate-scale-in">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Invoices
-            </CardTitle>
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <FileText className="h-5 w-5 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">
-              {isLoading ? (
-                <Loader2 className="h-8 w-8 animate-spin" />
-              ) : (
-                stats.totalInvoices
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              All invoices created
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="bg-card-gradient shadow-medium hover:shadow-large transition-all duration-300 border-0 animate-scale-in"
-          style={{ animationDelay: "0.1s" }}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Recurring Invoices
-            </CardTitle>
-            <div className="p-2 bg-blue-500/10 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-blue-500" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">
-              {isLoading ? (
-                <Loader2 className="h-8 w-8 animate-spin" />
-              ) : (
-                stats.recurringInvoices
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Automated billing
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="bg-card-gradient shadow-medium hover:shadow-large transition-all duration-300 border-0 animate-scale-in"
-          style={{ animationDelay: "0.2s" }}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              One-time Invoices
-            </CardTitle>
-            <div className="p-2 bg-purple-500/10 rounded-lg">
-              <FileText className="h-5 w-5 text-purple-500" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">
-              {isLoading ? (
-                <Loader2 className="h-8 w-8 animate-spin" />
-              ) : (
-                stats.oneTimeInvoices
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Single transactions
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="bg-card-gradient shadow-medium hover:shadow-large transition-all duration-300 border-0 animate-scale-in"
-          style={{ animationDelay: "0.3s" }}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Active Clients
-            </CardTitle>
-            <div className="p-2 bg-info/10 rounded-lg">
-              <Users className="h-5 w-5 text-info" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-foreground">
-              {isLoading ? (
-                <Loader2 className="h-8 w-8 animate-spin" />
-              ) : (
-                stats.totalClients
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">Total clients</p>
-          </CardContent>
-        </Card>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Total Invoices"
+          value={stats.totalInvoices}
+          icon={<FileText className="h-4 w-4 text-primary" />}
+          description="All invoices created"
+          isLoading={isLoading}
+        />
+        <StatCard
+          title="Recurring Invoices"
+          value={stats.recurringInvoices}
+          icon={<TrendingUp className="h-4 w-4 text-blue-500" />}
+          description="Automated billing"
+          isLoading={isLoading}
+        />
+        <StatCard
+          title="One-time Invoices"
+          value={stats.oneTimeInvoices}
+          icon={<FileText className="h-4 w-4 text-purple-500" />}
+          description="Single transactions"
+          isLoading={isLoading}
+        />
+        <StatCard
+          title="Active Clients"
+          value={stats.totalClients}
+          icon={<Users className="h-4 w-4 text-info" />}
+          description="Total clients"
+          isLoading={isLoading}
+        />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <Card className="xl:col-span-2 bg-card-gradient shadow-medium border-0 overflow-hidden">
-          <CardHeader className="border-b border-border/50 bg-muted/20">
+        {/* Recent Invoices Card */}
+        <Card className="xl:col-span-2 border shadow-sm">
+          <CardHeader className="border-b">
             <CardTitle className="flex items-center justify-between text-lg">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <FileText className="h-5 w-5 text-primary" />
-                </div>
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
                 Recent Invoices
               </div>
               <Link to="/app/invoices">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="shadow-sm hover:shadow-md transition-shadow"
-                >
+                <Button variant="outline" size="sm">
                   <Eye className="h-4 w-4 mr-2" />
                   View All
                 </Button>
@@ -235,65 +155,47 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
-              <div className="p-8 text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  Loading recent invoices...
-                </p>
+              <div className="p-6 text-center text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                Loading...
               </div>
             ) : recentInvoices.length === 0 ? (
-              <div className="p-8 text-center">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-2">No invoices yet</p>
+              <div className="p-6 text-center">
+                <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                <p className="font-semibold">No invoices yet</p>
                 <p className="text-sm text-muted-foreground">
                   Create your first invoice to get started
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-border/50">
-                {recentInvoices.map((invoice, index) => (
+              <div className="divide-y">
+                {recentInvoices.map((invoice) => (
                   <Link
                     key={invoice.id}
                     to={`/app/view-invoice/${invoice.id}`}
-                    className="block p-4 hover:bg-muted/30 transition-colors group cursor-pointer"
+                    className="block px-4 py-3 hover:bg-muted/50 transition-colors group"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <div className="relative">
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                            <FileText className="h-5 w-5 text-primary" />
-                          </div>
-                          {invoice.isRecurring && (
-                            <TrendingUp className="w-3 h-3 text-blue-500 absolute -top-1 -right-1 bg-background rounded-full" />
-                          )}
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/10">
+                          <FileText className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                          <p className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                          <p className="font-semibold text-sm group-hover:text-primary">
                             {invoice.invoiceNumber}
                           </p>
-                          <p className="text-sm text-muted-foreground">
-                            {invoice.client}
-                          </p>
                           <p className="text-xs text-muted-foreground">
-                            {invoice.date}
+                            {invoice.client}
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-lg">
+                        <p className="font-semibold text-sm">
                           {invoice.currency} {invoice.amount.toLocaleString()}
                         </p>
-                        {invoice.isRecurring && (
-                          <p className="text-xs text-blue-500 font-medium">
-                            Recurring
-                          </p>
-                        )}
-                        <div className="flex items-center gap-1 mt-1">
-                          <Eye className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">
-                            Click to view
-                          </span>
-                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {invoice.date}
+                        </p>
                       </div>
                     </div>
                   </Link>
@@ -303,81 +205,46 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-card-gradient shadow-medium border-0">
-          <CardHeader className="border-b border-border/50 bg-muted/20">
-            <CardTitle className="flex items-center gap-3 text-lg">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Plus className="h-5 w-5 text-primary" />
-              </div>
+        {/* Quick Actions Card */}
+        <Card className="border shadow-sm">
+          <CardHeader className="border-b">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Plus className="h-5 w-5 text-primary" />
               Quick Actions
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="space-y-3">
-              <Link to="/app/create-invoice" className="block group">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-12 shadow-sm hover:shadow-md transition-all hover:scale-105 group-hover:bg-primary/5"
-                >
-                  <div className="p-1 bg-primary/10 rounded mr-3">
-                    <Plus className="h-4 w-4 text-primary" />
-                  </div>
-                  Create New Invoice
-                </Button>
-              </Link>
-              <Link to="/app/clients" className="block group">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-12 shadow-sm hover:shadow-md transition-all hover:scale-105 group-hover:bg-info/5"
-                >
-                  <div className="p-1 bg-info/10 rounded mr-3">
-                    <Users className="h-4 w-4 text-info" />
-                  </div>
-                  Manage Clients
-                </Button>
-              </Link>
-              <Link to="/app/templates" className="block group">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-12 shadow-sm hover:shadow-md transition-all hover:scale-105 group-hover:bg-success/5"
-                >
-                  <div className="p-1 bg-success/10 rounded mr-3">
-                    <Layout className="h-4 w-4 text-success" />
-                  </div>
-                  Templates
-                </Button>
-              </Link>
-              <Link to="/app/profile" className="block group">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start h-12 shadow-sm hover:shadow-md transition-all hover:scale-105 group-hover:bg-warning/5"
-                >
-                  <div className="p-1 bg-warning/10 rounded mr-3">
-                    <User className="h-4 w-4 text-warning" />
-                  </div>
-                  Update Profile
-                </Button>
-              </Link>
-            </div>
+          <CardContent className="p-4 space-y-2">
+            <QuickActionButton
+              to="/app/create-invoice"
+              icon={<Plus className="h-4 w-4 text-primary" />}
+              label="Create New Invoice"
+            />
+            <QuickActionButton
+              to="/app/clients"
+              icon={<Users className="h-4 w-4 text-info" />}
+              label="Manage Clients"
+            />
+            <QuickActionButton
+              to="/app/templates"
+              icon={<Layout className="h-4 w-4 text-success" />}
+              label="Templates"
+            />
+            <QuickActionButton
+              to="/app/profile"
+              icon={<User className="h-4 w-4 text-warning" />}
+              label="Update Profile"
+            />
 
-            <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+            <div className="mt-4 pt-4 border-t">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                  <Sparkles className="h-4 w-4 text-white" />
-                </div>
-                <span className="font-semibold text-foreground">
-                  AI Invoice Generator
-                </span>
+                 <Sparkles className="h-5 w-5 text-primary" />
+                <span className="font-semibold text-base">AI Invoice Generator</span>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
-                Describe your invoice and let AI generate the details
-                automatically
+                Describe your invoice and let our AI generate it automatically.
               </p>
               <Link to="/app/create-invoice">
-                <Button
-                  size="sm"
-                  className="w-full bg-primary hover:shadow-md transition-shadow"
-                >
+                <Button size="sm" className="w-full">
                   <Sparkles className="h-4 w-4 mr-2" />
                   Try AI Generation
                 </Button>
@@ -389,3 +256,31 @@ export default function Dashboard() {
     </div>
   );
 }
+
+// Helper components for cleaner structure
+
+const StatCard = ({ title, value, icon, description, isLoading }) => (
+  <Card className="border shadow-sm">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium text-muted-foreground">
+        {title}
+      </CardTitle>
+      {icon}
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">
+        {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : value}
+      </div>
+      <p className="text-xs text-muted-foreground mt-1">{description}</p>
+    </CardContent>
+  </Card>
+);
+
+const QuickActionButton = ({ to, icon, label }) => (
+  <Link to={to} className="block">
+    <Button variant="outline" className="w-full justify-start h-10">
+      <div className="mr-2">{icon}</div>
+      {label}
+    </Button>
+  </Link>
+);

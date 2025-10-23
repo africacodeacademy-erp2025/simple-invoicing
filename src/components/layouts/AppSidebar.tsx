@@ -1,9 +1,10 @@
 
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { LogOut, Settings, LayoutDashboard, FileText, Users, Palette, LifeBuoy } from "lucide-react";
+import { LogOut, Settings, LayoutDashboard, FileText, Users, Palette, LifeBuoy, User, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import Billing from "@/pages/Billing";
 
 interface AppSidebarProps {
   isOpen: boolean;
@@ -32,6 +33,16 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen }) => {
       path: "/app/templates",
       icon: <Palette className="h-4 w-4" />,
       label: "Templates",
+    },
+    {
+      path: "/app/billing",
+      icon: < DollarSign className="h-4 w-4" />,
+      label: "Billing",
+    },
+    {
+      path: "/app/Profile",
+      icon: <User className="h-4 w-4" />,
+      label: "Profile",
     },
   ];
 
