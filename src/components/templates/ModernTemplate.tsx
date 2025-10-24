@@ -135,7 +135,7 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
                   <tbody>
                     {invoiceData.lineItems.map((item, index) => (
                       <tr
-                        key={item.id || index}
+                        key={item.id}
                         className={
                           index % 2 === 0 ? "bg-background" : "bg-muted/30"
                         }

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MinimalTemplate } from "@/components/templates/MinimalTemplate";
 import { ClassicTemplate } from "@/components/templates/ClassicTemplate";
 import { ModernTemplate } from "@/components/templates/ModernTemplate";
@@ -7,21 +7,48 @@ import { CorporateTemplate } from "@/components/templates/CorporateTemplate";
 import { CreativeTemplate } from "@/components/templates/CreativeTemplate";
 import { InvoiceData } from "@/types/invoice";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Star, Download, FileText, FileSpreadsheet, Lock } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { TemplateService } from "@/services/template.service";
-import { toast } from "@/hooks/use-toast";
+import { Eye, Star } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const availableTemplates = [
-  { id: "minimal", name: "Minimal", component: MinimalTemplate, isPremium: true },
-  { id: "classic", name: "Classic", component: ClassicTemplate, isPremium: false },
-  { id: "modern", name: "Modern", component: ModernTemplate, isPremium: false },
-  { id: "corporate", name: "Corporate", component: CorporateTemplate, isPremium: true },
-  { id: "creative", name: "Creative", component: CreativeTemplate, isPremium: true },
+  {
+    id: "minimal",
+    name: "Minimal",
+    component: MinimalTemplate,
+    isPremium: true,
+  },
+  {
+    id: "classic",
+    name: "Classic",
+    component: ClassicTemplate,
+    isPremium: false,
+  },
+  {
+    id: "modern",
+    name: "Modern",
+    component: ModernTemplate,
+    isPremium: false,
+  },
+  {
+    id: "corporate",
+    name: "Corporate",
+    component: CorporateTemplate,
+    isPremium: true,
+  },
+  {
+    id: "creative",
+    name: "Creative",
+    component: CreativeTemplate,
+    isPremium: true,
+  },
 ];
 
+// Dummy data to populate the templates for preview
 const dummyInvoiceData: InvoiceData = {
   invoiceNumber: "INV-2024-001",
   date: new Date().toISOString(),
@@ -62,27 +89,17 @@ const dummyInvoiceData: InvoiceData = {
 export default function Templates() {
   const [previewTemplate, setPreviewTemplate] = useState<any | null>(null);
 
-  const handleDownload = async (templateId: string, format: 'word' | 'excel') => {
-    try {
-      const response = await TemplateService.downloadTemplate(templateId, format);
-      if (response.success) {
-        toast({ title: "Download Started", description: `Your ${format.toUpperCase()} template is downloading.` });
-      } else {
-        toast({ title: "Download Failed", description: response.message, variant: "destructive" });
-      }
-    } catch (error) {
-      console.error(error);
-      toast({ title: "Error", description: "An unexpected error occurred.", variant: "destructive" });
-    }
-  };
-
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <h2 className="text-3xl font-bold">Invoice Templates</h2>
-        <p className="text-muted-foreground mt-1">Preview our templates or download a free version to get started.</p>
+        <p className="text-muted-foreground mt-1">
+          Preview and choose a professional template for your invoices.
+        </p>
       </div>
 
+      {/* Templates Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {availableTemplates.map((template) => (
           <Card key={template.id} className="overflow-hidden shadow-sm flex flex-col">
@@ -90,13 +107,16 @@ export default function Templates() {
               <CardTitle className="flex items-center justify-between">
                 <span>{template.name}</span>
                 {template.isPremium && (
-                  <Badge variant="premium"><Star className="h-3 w-3 mr-1" />Pro</Badge>
+                  <Badge variant="premium">
+                    <Star className="h-3 w-3 mr-1" />
+                    Pro
+                  </Badge>
                 )}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 flex-grow">
               <div
-                className="h-[400px] bg-gray-100 dark:bg-gray-800 overflow-hidden relative group cursor-pointer"
+                className="h-[400px] bg-gray-100 overflow-hidden relative group cursor-pointer"
                 onClick={() => setPreviewTemplate(template)}
               >
                 {/* Correctly positioned and scaled wrapper */}
@@ -109,45 +129,33 @@ export default function Templates() {
                 </div>
 
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                   <Button variant="outline" size="sm" className="bg-white/90 text-gray-800 hover:bg-white">
-                      <Eye className="h-4 w-4 mr-2" />
-                      Full Preview
-                  </Button>
+                  <div className="text-white font-semibold flex items-center gap-2 bg-gray-900/50 px-4 py-2 rounded-lg">
+                    <Eye className="h-5 w-5" />
+                    View Full Preview
+                  </div>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="p-3 bg-muted/30 border-t flex justify-end">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" size="sm">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleDownload(template.id, 'word')} disabled={template.isPremium}>
-                      <FileText className="h-4 w-4 mr-2" />
-                      Word (.docx)
-                      {template.isPremium && <Lock className="h-3 w-3 ml-auto" />}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleDownload(template.id, 'excel')} disabled={template.isPremium}>
-                      <FileSpreadsheet className="h-4 w-4 mr-2" />
-                      Excel (.xlsx)
-                      {template.isPremium && <Lock className="h-3 w-3 ml-auto" />}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-            </CardFooter>
           </Card>
         ))}
       </div>
 
-      <Dialog open={!!previewTemplate} onOpenChange={(isOpen) => !isOpen && setPreviewTemplate(null)}>
+      {/* Preview Modal */}
+      <Dialog
+        open={!!previewTemplate}
+        onOpenChange={(isOpen) => !isOpen && setPreviewTemplate(null)}
+      >
         <DialogContent className="max-w-4xl h-[90vh] p-0">
-          <DialogHeader className="p-4 border-b"><DialogTitle>Preview: {previewTemplate?.name}</DialogTitle></DialogHeader>
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle>
+              Preview: {previewTemplate?.name} Template
+            </DialogTitle>
+          </DialogHeader>
           <div className="h-full overflow-y-auto bg-gray-200 p-8">
             <div className="w-full max-w-3xl mx-auto shadow-lg">
-              {previewTemplate && <previewTemplate.component invoiceData={dummyInvoiceData} />}
+              {previewTemplate && (
+                <previewTemplate.component invoiceData={dummyInvoiceData} />
+              )}
             </div>
           </div>
         </DialogContent>
