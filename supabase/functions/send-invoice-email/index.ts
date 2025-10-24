@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { encode } from "https://deno.land/std@0.177.0/encoding/base64.ts";
 
 // CORS headers
 const corsHeaders = {
@@ -51,7 +50,7 @@ serve(async (req) => {
     }
 
     // --- PARSE REQUEST BODY ---
-    const { invoiceId, recipientEmail, recipientName, customMessage, ccOwner, autoGenerateMessage, pdfPath } = await req.json();
+    const { invoiceId, recipientEmail, recipientName, customMessage, ccOwner, autoGenerateMessage } = await req.json();
 
     if (!invoiceId || !recipientEmail) {
       return new Response(
@@ -59,7 +58,7 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
+    
     // --- GET INVOICE AND PROFILE DATA ---
     const { data: invoice, error: invoiceError } = await supabase
       .from("invoices")
@@ -75,20 +74,6 @@ serve(async (req) => {
       );
     }
 
-    // --- DOWNLOAD PDF FROM STORAGE ---
-    let pdfContent = null;
-    if (pdfPath) {
-        const { data: pdfData, error: pdfError } = await supabase.storage.from('invoices').download(pdfPath);
-        if (pdfError) {
-            console.error("PDF download error:", pdfError);
-            // Not treating this as a fatal error, email will be sent without attachment.
-        } else {
-            const arrayBuffer = await pdfData.arrayBuffer();
-            pdfContent = encode(arrayBuffer); // Use the robust base64 encode function from Deno standard library
-        }
-    }
-
-
     const { data: profile } = await supabase
       .from("user_profiles")
       .select("email")
@@ -102,7 +87,7 @@ serve(async (req) => {
     // --- SENDGRID PAYLOAD ---
     const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
     const sendgridFromEmail = Deno.env.get("SENDGRID_FROM_EMAIL");
-
+    
     if (!sendgridApiKey || !sendgridFromEmail) {
       console.error("Missing SendGrid environment variables");
       return new Response(
@@ -111,7 +96,7 @@ serve(async (req) => {
       );
     }
 
-    const emailPayload: any = {
+    const emailPayload = {
       personalizations: [
         {
           to: [{ email: recipientEmail, name: recipientName }],
@@ -121,18 +106,7 @@ serve(async (req) => {
       ],
       from: { email: sendgridFromEmail, name: invoice.business_name || "Easy Charge Pro" },
       content: [{ type: "text/html", value: htmlContent }],
-      attachments: [],
     };
-
-    if (pdfContent) {
-      emailPayload.attachments.push({
-        content: pdfContent,
-        filename: `invoice-${invoice.invoice_number}.pdf`,
-        type: "application/pdf",
-        disposition: "attachment"
-      });
-    }
-
 
     // --- SEND EMAIL VIA SENDGRID ---
     const sendgridResponse = await fetch("https://api.sendgrid.com/v3/mail/send", {
@@ -172,7 +146,7 @@ serve(async (req) => {
 function generateInvoiceEmailHTML(invoice: any, message: string): string {
   const currencySymbol = getCurrencySymbol(invoice.currency);
   const formatCurrency = (amount: number) => `${currencySymbol}${amount.toFixed(2)}`;
-
+  
   return `
     <!DOCTYPE html>
     <html>
