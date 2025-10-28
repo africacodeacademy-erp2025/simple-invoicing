@@ -7,6 +7,7 @@ export interface EmailInvoiceRequest {
   customMessage?: string;
   ccOwner?: boolean;
   autoGenerateMessage?: boolean;
+  pdfUrl?: string; // URL to the PDF in Supabase Storage
 }
 
 export interface EmailInvoiceResponse {

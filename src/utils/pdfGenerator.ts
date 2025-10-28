@@ -84,7 +84,7 @@ export const generatePDF = async (
 
     // Create canvas from the styled element
     const canvas = await html2canvas(tempContainer, {
-      scale: 2, // Higher scale for better quality
+      scale: 1, // Reduce scale to potentially smaller PDF size
       useCORS: true,
       allowTaint: true,
       backgroundColor: "#ffffff",
@@ -140,7 +140,7 @@ export const generatePDFBuffer = async (
 ): Promise<Uint8Array> => {
   try {
     const canvas = await html2canvas(invoiceElement, {
-      scale: 2,
+      scale: 1, // Reduce scale to potentially smaller PDF size
       useCORS: true,
       allowTaint: true,
       backgroundColor: "#ffffff",

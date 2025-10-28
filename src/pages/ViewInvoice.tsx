@@ -11,11 +11,12 @@ import { Download, ArrowLeft, Eye, Loader2, Mail, Send } from "lucide-react";
 import { InvoicePreview } from "@/components/InvoicePreview";
 import { InvoiceData, currencies } from "@/types/invoice";
 import { InvoiceTemplate } from "@/types/templates";
-import { generatePDF } from "@/utils/pdfGenerator";
+import { generatePDF, generatePDFBuffer } from "@/utils/pdfGenerator";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { InvoiceController } from "@/controllers/invoice.controller";
 import { EmailService } from "@/services/email.service";
+import { supabase } from "@/lib/supabase";
 import { usePlanAccess } from "@/hooks/usePlanAccess";
 import { PaywallModal } from "@/components/PaywallModal";
 import { ProtectedInvoiceController } from "@/controllers/invoice.controller.protected";
@@ -39,7 +40,7 @@ const ViewInvoice = () => {
 
   // Get user data
   const { user } = useAuth();
-  const { canExportPDFEffective } = usePlanAccess();
+  const { canExportPDF } = usePlanAccess();
 
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     invoiceNumber: "",
@@ -205,6 +206,15 @@ const ViewInvoice = () => {
   };
 
   const handleSendEmail = async () => {
+    if (!id || !user?.id) {
+      toast({
+        title: "Authentication Error",
+        description: "User information is missing. Please try logging out and back in.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!id) {
       toast({
         title: "Error",
@@ -223,8 +233,58 @@ const ViewInvoice = () => {
       return;
     }
 
+    if (!invoicePreviewRef.current) {
+      toast({
+        title: "Error",
+        description: "Invoice preview not available for PDF generation.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSendingEmail(true);
     try {
+      // Generate PDF buffer
+      const pdfBuffer = await generatePDFBuffer(invoicePreviewRef.current);
+      
+      // Define file path for Supabase Storage
+      const fileName = `invoice-${invoiceData.invoiceNumber}-${Date.now()}.pdf`;
+      const filePath = `${user.id}/${fileName}`;
+
+      // Upload the PDF to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('invoice-pdfs')
+        .upload(filePath, pdfBuffer, {
+          contentType: 'application/pdf',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        toast({
+          title: "Storage Error",
+          description: "Failed to upload the invoice PDF. Please try again.",
+          variant: "destructive",
+        });
+        setIsSendingEmail(false);
+        return;
+      }
+
+      // Get the public URL of the uploaded file
+      const { data: urlData } = supabase.storage
+        .from('invoice-pdfs')
+        .getPublicUrl(filePath);
+
+      if (!urlData?.publicUrl) {
+        toast({
+          title: "Storage Error",
+          description: "Failed to get the public URL for the PDF.",
+          variant: "destructive",
+        });
+        setIsSendingEmail(false);
+        return;
+      }
+
       const response = await EmailService.sendInvoiceEmail({
         invoiceId: id,
         recipientEmail: emailData.recipientEmail,
@@ -232,6 +292,7 @@ const ViewInvoice = () => {
         customMessage: emailData.customMessage,
         ccOwner: emailData.ccOwner,
         autoGenerateMessage: emailData.autoGenerateMessage,
+        pdfUrl: urlData.publicUrl,
       });
 
       if (response.success) {
@@ -424,14 +485,14 @@ const ViewInvoice = () => {
 
           <Button
             onClick={() => {
-              if (!canExportPDFEffective) {
+              if (!canExportPDF) {
                 toast({ title: "Premium Feature", description: "PDF export requires a Pro plan or higher", variant: "destructive" });
                 setShowPaywall(true);
                 return;
               }
               void handleGeneratePDF();
             }}
-            disabled={isGenerating || !canExportPDFEffective}
+            disabled={isGenerating || !canExportPDF}
             className="bg-primary hover:opacity-90 transition-opacity"
           >
             {isGenerating ? (
@@ -443,7 +504,7 @@ const ViewInvoice = () => {
               <>
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
-                {!canExportPDFEffective && (
+                {!canExportPDF && (
                   <span className="ml-2 text-xs px-1.5 py-0.5 bg-yellow-400 text-yellow-900 rounded">Pro</span>
                 )}
               </>
