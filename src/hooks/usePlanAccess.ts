@@ -1,4 +1,3 @@
-
 // src/hooks/usePlanAccess.ts
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,12 +19,15 @@ export function usePlanAccess() {
     );
   }, [profile?.subscription_status, profile?.current_period_end]);
 
+  const normalizedUserPlan = useMemo(() => {
+    return PlanAccessService.normalizePlan(profile?.plan);
+  }, [profile?.plan]);
+
   const hasPremiumAccess = useMemo(() => {
     if (profileLoading) return false;
-    const normalizedPlan = PlanAccessService.normalizePlan(profile?.plan);
-    if (normalizedPlan === 'free' || normalizedPlan === 'starter') return false;
-    return isSubscriptionActive;
-  }, [profile?.plan, isSubscriptionActive, profileLoading]);
+    // Premium access is defined as being on the 'pro' plan and having an active subscription.
+    return normalizedUserPlan === 'pro' && isSubscriptionActive;
+  }, [normalizedUserPlan, isSubscriptionActive, profileLoading]);
 
   useEffect(() => {
     const fetchLimits = async () => {
@@ -33,22 +35,21 @@ export function usePlanAccess() {
       
       setLimitsLoading(true);
       try {
-        const normalizedPlan = PlanAccessService.normalizePlan(profile?.plan);
-        const limits = await PlanAccessService.getPlanLimits(normalizedPlan);
+        const limits = await PlanAccessService.getPlanLimits(normalizedUserPlan);
         setPlanLimits(limits);
 
-        const isPaidPlan = normalizedPlan !== 'free' && normalizedPlan !== 'starter';
-        if (isPaidPlan && !isSubscriptionActive) {
-          const freeLimits = await PlanAccessService.getPlanLimits('free');
-          setEffectivePlanLimits(freeLimits);
-        } else {
-          setEffectivePlanLimits(limits);
-        }
+        // Determine effective limits: if not 'pro' or subscription inactive, use 'free' limits.
+        const effectiveLimits = (normalizedUserPlan === 'pro' && isSubscriptionActive)
+          ? limits
+          : await PlanAccessService.getPlanLimits('free');
+        
+        setEffectivePlanLimits(effectiveLimits);
+
       } catch (error) {
         console.error('Failed to fetch plan limits', error);
         // Fallback to free limits in case of an error
         const freeLimits = await PlanAccessService.getPlanLimits('free');
-        setPlanLimits(freeLimits);
+        setPlanLimits(freeLimits); // Cache free limits even if fetching failed
         setEffectivePlanLimits(freeLimits);
       } finally {
         setLimitsLoading(false);
@@ -56,43 +57,53 @@ export function usePlanAccess() {
     };
 
     fetchLimits();
-  }, [profile?.plan, profileLoading, isSubscriptionActive]);
+  }, [normalizedUserPlan, profileLoading, isSubscriptionActive]);
 
   const checkFeatureAccess = useCallback(async (feature: keyof PlanLimits): Promise<AccessCheckResult> => {
+    // Use the user's actual plan for checking feature availability, not just effective limits.
+    // The reason for this is that the 'reason' and 'upgradeRequired' should reflect the user's actual plan status.
     return PlanAccessService.canAccessFeature(profile?.plan, feature);
   }, [profile?.plan]);
 
   const requireUpgrade = useCallback(async (feature: keyof PlanLimits): Promise<AccessCheckResult> => {
+    // This function is essentially a wrapper around checkFeatureAccess,
+    // providing a more direct name for UI elements that need to show upgrade prompts.
     return checkFeatureAccess(feature);
   }, [checkFeatureAccess]);
   
-  const features = useMemo(() => ({
-    canUseAI: effectivePlanLimits?.canUseAI ?? false,
-    canExportPDF: effectivePlanLimits?.canExportPDF ?? false,
-    canUseRecurring: effectivePlanLimits?.canUseRecurring ?? false,
-    canUseCustomBranding: effectivePlanLimits?.canUseCustomBranding ?? false,
-    canUseAdvancedAnalytics: effectivePlanLimits?.canUseAdvancedAnalytics ?? false,
-    canUseTeamAccess: effectivePlanLimits?.canUseTeamAccess ?? false,
-    canUseAutomatedReminders: effectivePlanLimits?.canUseAutomatedReminders ?? false,
-    canUseIntegrations: effectivePlanLimits?.canUseIntegrations ?? false,
-    canUseAPIAccess: effectivePlanLimits?.canUseAPIAccess ?? false,
-    prioritySupport: effectivePlanLimits?.prioritySupport ?? false,
-  }), [effectivePlanLimits]);
+  // Expose all features based on effective limits
+  const features = useMemo(() => {
+    if (!effectivePlanLimits) return {}; // Return empty if limits are not yet loaded
+
+    return {
+      canUseAI: effectivePlanLimits.canUseAI,
+      canExportPDF: effectivePlanLimits.canExportPDF,
+      canUseRecurring: effectivePlanLimits.canUseRecurring,
+      canUseCustomBranding: effectivePlanLimits.canUseCustomBranding,
+      canUseAdvancedAnalytics: effectivePlanLimits.canUseAdvancedAnalytics,
+      canUseTeamAccess: effectivePlanLimits.canUseTeamAccess,
+      canUseAutomatedReminders: effectivePlanLimits.canUseAutomatedReminders,
+      canUseIntegrations: effectivePlanLimits.canUseIntegrations,
+      canUseAPIAccess: effectivePlanLimits.canUseAPIAccess,
+      prioritySupport: effectivePlanLimits.prioritySupport,
+      maxInvoicesPerMonth: effectivePlanLimits.maxInvoicesPerMonth,
+      maxClients: effectivePlanLimits.maxClients,
+      maxTemplates: effectivePlanLimits.maxTemplates,
+    };
+  }, [effectivePlanLimits]);
 
   return {
     profile,
     profileLoading,
     limitsLoading,
-    planLimits, // The limits of the user's subscribed plan
+    planLimits, // The limits of the user's subscribed plan (or free if not subscribed)
     effectivePlanLimits, // The limits the user can actually use right now
     isSubscriptionActive,
-    hasPremiumAccess,
-    checkFeatureAccess,
-    requireUpgrade,
-    ...features,
-    isPro: profile?.plan?.toLowerCase().includes('pro'),
-    isBusiness: profile?.plan?.toLowerCase().includes('business'),
-    isEnterprise: profile?.plan?.toLowerCase().includes('enterprise'),
-    isFree: !profile?.plan || profile.plan.toLowerCase() === 'free' || profile.plan.toLowerCase() === 'starter',
+    hasPremiumAccess, // True if user is on 'pro' and subscription is active
+    checkFeatureAccess, // Function to check access for a specific feature
+    requireUpgrade,     // Function to check access, often used for upgrade prompts
+    ...features,        // Spread all the feature flags and limits
+    isPro: normalizedUserPlan === 'pro',
+    isFree: normalizedUserPlan === 'free',
   };
 }

@@ -22,13 +22,14 @@ import { ModernTemplate } from "@/components/templates/ModernTemplate";
 import { CorporateTemplate } from "@/components/templates/CorporateTemplate";
 import { CreativeTemplate } from "@/components/templates/CreativeTemplate";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PlanAccessService, PlanTier } from "@/services/planAccess.service"; // Import PlanAccessService and PlanTier
 
 const availableTemplates = [
-  { id: InvoiceTemplate.MINIMAL, name: "Minimal", component: MinimalTemplate, isPremium: true },
-  { id: InvoiceTemplate.CLASSIC, name: "Classic", component: ClassicTemplate, isPremium: false },
-  { id: InvoiceTemplate.MODERN, name: "Modern", component: ModernTemplate, isPremium: false },
-  { id: InvoiceTemplate.CORPORATE, name: "Corporate", component: CorporateTemplate, isPremium: true },
-  { id: InvoiceTemplate.CREATIVE, name: "Creative", component: CreativeTemplate, isPremium: true },
+  { id: InvoiceTemplate.MODERN, name: "Modern", component: ModernTemplate, isPremium: false, index: 0 }, // Modern is the default free template
+  { id: InvoiceTemplate.MINIMAL, name: "Minimal", component: MinimalTemplate, isPremium: true, index: 1 },
+  { id: InvoiceTemplate.CLASSIC, name: "Classic", component: ClassicTemplate, isPremium: true, index: 2 },
+  { id: InvoiceTemplate.CORPORATE, name: "Corporate", component: CorporateTemplate, isPremium: true, index: 3 },
+  { id: InvoiceTemplate.CREATIVE, name: "Creative", component: CreativeTemplate, isPremium: true, index: 4 },
 ];
 
 const CreateInvoice = () => {
@@ -40,13 +41,13 @@ const CreateInvoice = () => {
 
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallFeature, setPaywallFeature] = useState('');
-  const [paywallPlan, setPaywallPlan] = useState<'pro' | 'business' | 'enterprise'>('pro');
+  const [paywallPlan, setPaywallPlan] = useState<PlanTier>('pro');
 
   const { user } = useAuth();
   const { profile, profileLoading } = useProfile(user?.id || null);
   const navigate = useNavigate();
 
-  const { canUsePremiumTemplates, canExportPDFEffective, canUseRecurringEffective, effectivePlanLimits } = usePlanAccess();
+  const { canExportPDF, canUseRecurring, maxTemplates, canUseAI } = usePlanAccess(); // Destructure directly from features
 
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     invoiceNumber: "",
@@ -135,14 +136,17 @@ const CreateInvoice = () => {
 
   const handleGeneratePDF = async () => {
     const selectedTemplateInfo = availableTemplates.find(t => t.id === selectedTemplate);
-    if (selectedTemplateInfo?.isPremium && !canUsePremiumTemplates) {
-      toast({ title: "Premium Feature", description: "This template requires a Pro plan.", variant: "destructive" });
-      setPaywallFeature("Premium Templates");
-      setPaywallPlan("pro");
+    // Check template access using the service directly or a more robust check from usePlanAccess
+    const templateAccessCheck = await PlanAccessService.canUseTemplate(profile?.plan, selectedTemplateInfo?.index ?? 0);
+    if (!templateAccessCheck.allowed) {
+      toast({ title: "Premium Feature", description: templateAccessCheck.reason, variant: "destructive" });
+      setPaywallFeature(`${selectedTemplateInfo?.name} Template`);
+      setPaywallPlan(templateAccessCheck.upgradeRequired || "pro");
       setShowPaywall(true);
       return;
     }
-    if (!canExportPDFEffective) {
+
+    if (!canExportPDF) { // Use canExportPDF directly
       toast({ title: "Premium Feature", description: "PDF export requires Pro plan", variant: "destructive" });
       setPaywallFeature("PDF Export");
       setPaywallPlan("pro");
@@ -172,15 +176,16 @@ const CreateInvoice = () => {
     }
 
     const selectedTemplateInfo = availableTemplates.find(t => t.id === selectedTemplate);
-    if (selectedTemplateInfo?.isPremium && !canUsePremiumTemplates) {
-      toast({ title: "Premium Feature", description: "This template requires a Pro plan.", variant: "destructive" });
-      setPaywallFeature("Premium Templates");
-      setPaywallPlan("pro");
+    const templateAccessCheck = await PlanAccessService.canUseTemplate(profile?.plan, selectedTemplateInfo?.index ?? 0);
+    if (!templateAccessCheck.allowed) {
+      toast({ title: "Premium Feature", description: templateAccessCheck.reason, variant: "destructive" });
+      setPaywallFeature(`${selectedTemplateInfo?.name} Template`);
+      setPaywallPlan(templateAccessCheck.upgradeRequired || "pro");
       setShowPaywall(true);
       return;
     }
 
-    if (invoiceData.isRecurring && !canUseRecurringEffective) {
+    if (invoiceData.isRecurring && !canUseRecurring) { // Use canUseRecurring directly
       toast({ title: "Premium Feature", description: "Recurring invoices require Pro plan", variant: "destructive" });
       setPaywallFeature("Recurring Invoices");
       setPaywallPlan("pro");
@@ -203,12 +208,19 @@ const CreateInvoice = () => {
 
     setIsSaving(true);
     try {
-      const response = await InvoiceController.saveInvoice(user.id, invoiceData, selectedTemplate);
+      // Use the ProtectedInvoiceController to ensure all access checks are performed
+      const response = await ProtectedInvoiceController.createInvoice(user.id, {
+        ...invoiceData,
+        template: selectedTemplate,
+        userPlan: profile?.plan, // Pass the user's plan for checks
+      });
+
       if (response.success) {
         toast({ title: "Success!", description: "Invoice created successfully." });
-        if (response.data?.id) navigate(`/app/view-invoice/${response.data.id}`);
+        const savedInvoiceId = Array.isArray(response.data) ? response.data[0]?.id : response.data?.id;
+        if (savedInvoiceId) navigate(`/app/view-invoice/${savedInvoiceId}`);
       } else {
-        toast({ title: "Error", description: response.message || "Validation error", variant: "destructive" });
+        toast({ title: "Error", description: response.error || "Failed to create invoice.", variant: "destructive" });
       }
     } catch (error) {
       console.error(error);
@@ -237,7 +249,7 @@ const CreateInvoice = () => {
             {isGenerating ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-background border-t-transparent mr-2"/>Generating...</> :
             <>
               <Download className="h-4 w-4 mr-2"/>Download PDF
-              {!canExportPDFEffective && <span className="ml-2 text-xs px-1.5 py-0.5 bg-yellow-400 text-yellow-900 rounded">Pro</span>}
+              {!canExportPDF && <span className="ml-2 text-xs px-1.5 py-0.5 bg-yellow-400 text-yellow-900 rounded">Pro</span>}
             </>}
           </Button>
         </div>

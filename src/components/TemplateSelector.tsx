@@ -14,30 +14,35 @@ const templateInfos: TemplateInfo[] = [
     name: "Modern",
     preview: "bg-gradient-to-br from-blue-50 to-indigo-100",
     isPremium: false,
-  },
-  {
-    id: InvoiceTemplate.CLASSIC,
-    name: "Classic",
-    preview: "bg-white border-2 border-gray-900",
-    isPremium: false,
+    index: 0, // Default free template
   },
   {
     id: InvoiceTemplate.MINIMAL,
     name: "Minimal",
     preview: "bg-white border border-gray-200",
     isPremium: true,
+    index: 1,
+  },
+  {
+    id: InvoiceTemplate.CLASSIC,
+    name: "Classic",
+    preview: "bg-white border-2 border-gray-900",
+    isPremium: true, // Mark Classic as premium
+    index: 2,
   },
   {
     id: InvoiceTemplate.CREATIVE,
     name: "Creative",
     preview: "bg-gradient-to-br from-purple-50 via-blue-50 to-green-50",
     isPremium: true,
+    index: 3,
   },
   {
     id: InvoiceTemplate.CORPORATE,
     name: "Corporate",
     preview: "bg-gray-50 border-t-4 border-gray-900",
     isPremium: true,
+    index: 4,
   },
 ];
 
@@ -45,7 +50,8 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   selectedTemplate,
   onSelectTemplate,
 }) => {
-  const { canUsePremiumTemplates } = usePlanAccess();
+  const { effectivePlanLimits } = usePlanAccess(); // Destructure effectivePlanLimits
+  const canUsePremiumTemplates = effectivePlanLimits?.maxTemplates === Infinity || effectivePlanLimits?.maxTemplates > 1; // Logic for premium templates
 
   return (
     <div className="grid grid-cols-3 gap-3">
