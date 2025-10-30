@@ -6,7 +6,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { BillingService } from "@/services/billing.service";
 import { useNavigate } from "react-router-dom";
 
-type PlanKey = "starter" | "pro" | "business" | "enterprise";
+type PlanKey = "starter" | "pro";
 
 const plans: Array<{
   key: PlanKey;
@@ -50,7 +50,8 @@ export default function PricingPlans() {
   const handleSelect = async (planKey: PlanKey, priceId?: string) => {
     if (planKey === "starter") return;
     if (!user) {
-      navigate("/signin");
+      const redirectUrl = `/signin?redirect=/app/billing`;
+      navigate(redirectUrl);
       return;
     }
     if (!priceId) {

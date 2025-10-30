@@ -1,9 +1,9 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import Stripe from "npm:stripe@11.1.0";
+import { serve } from "std/http/server.ts";
+import { createClient } from "@supabase/supabase-js";
+import Stripe from "stripe";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
-  apiVersion: "2023-10-16",
+  apiVersion: "2025-09-30.clover",
 });
 
 const supabase = createClient(
@@ -18,6 +18,7 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('Stripe Webhook received request. Headers:', JSON.stringify(Object.fromEntries(req.headers.entries())));
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
@@ -36,7 +37,7 @@ serve(async (req) => {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+    event = await stripe.webhooks.constructEventAsync(rawBody, sig, webhookSecret);
   } catch (err) {
     console.error("Webhook signature verification failed.", err);
     return new Response("Bad signature", { status: 400, headers: corsHeaders });
@@ -44,17 +45,14 @@ serve(async (req) => {
 
   try {
     // Helper: map Stripe price IDs to plans
-    const PRICE_TO_PLAN: Record<string, { plan: string; tier: string }> = {
-      // Populate from env at runtime
-      [(Deno.env.get("STRIPE_PRICE_STARTER_MONTHLY") || "")]: { plan: "free", tier: "starter" },
-      [(Deno.env.get("STRIPE_PRICE_PRO_MONTHLY") || "")]: { plan: "pro", tier: "growth" },
-      [(Deno.env.get("STRIPE_PRICE_BUSINESS_MONTHLY") || "")]: { plan: "business", tier: "advanced" },
-      [(Deno.env.get("STRIPE_PRICE_ENTERPRISE_MONTHLY") || "")]: { plan: "enterprise", tier: "enterprise" },
-      // Optional yearly
-      [(Deno.env.get("STRIPE_PRICE_PRO_YEARLY") || "")]: { plan: "pro", tier: "growth" },
-      [(Deno.env.get("STRIPE_PRICE_BUSINESS_YEARLY") || "")]: { plan: "business", tier: "advanced" },
-      [(Deno.env.get("STRIPE_PRICE_ENTERPRISE_YEARLY") || "")]: { plan: "enterprise", tier: "enterprise" },
-    };
+    // Only include mappings for env vars that are set (non-empty)
+    const PRICE_TO_PLAN: Record<string, { plan: string; tier: string }> = {};
+    const pStarter = Deno.env.get("STRIPE_PRICE_STARTER_MONTHLY") || "";
+    const pProMonthly = Deno.env.get("STRIPE_PRICE_PRO_MONTHLY") || "";
+    const pProYearly = Deno.env.get("STRIPE_PRICE_PRO_YEARLY") || "";
+    if (pStarter) PRICE_TO_PLAN[pStarter] = { plan: "starter", tier: "starter" };
+    if (pProMonthly) PRICE_TO_PLAN[pProMonthly] = { plan: "pro", tier: "growth" };
+    if (pProYearly) PRICE_TO_PLAN[pProYearly] = { plan: "pro", tier: "growth" };
 
     switch (event.type) {
       case "checkout.session.completed": {
@@ -63,7 +61,8 @@ serve(async (req) => {
           const subscriptionId = (session.subscription as string) || undefined;
           const customerId = (session.customer as string) || undefined;
           const priceId = (session.line_items?.data?.[0]?.price?.id as string) || (session.metadata?.priceId as string) || undefined;
-          const supabaseUserId = session.metadata?.supabase_user_id;
+          let supabaseUserId = session.metadata?.supabase_user_id as string | undefined;
+          console.log('Received checkout.session.completed for session:', session.id, 'customer:', session.customer);
 
           // Fallback: retrieve subscription to get items/price
           let resolvedPriceId = priceId;
@@ -83,6 +82,45 @@ serve(async (req) => {
               : null;
           }
 
+          // If we didn't receive the supabase user id in the session metadata, try to resolve it from the customer id
+          if (!supabaseUserId) {
+            try {
+              if (customerId) {
+                const { data: profilesByCustomer } = await supabase
+                  .from("user_profiles")
+                  .select("user_id")
+                  .eq("stripe_customer_id", customerId)
+                  .limit(1);
+                const found = profilesByCustomer?.[0]?.user_id;
+                if (found) {
+                  supabaseUserId = found;
+                  console.log('Resolved supabase user id from stripe_customer_id:', supabaseUserId);
+                }
+              }
+            } catch (err) {
+              console.error('Error resolving user by stripe_customer_id', err);
+            }
+          }
+
+          // If still not resolved, try to resolve by customer email (available on session.customer_details)
+          if (!supabaseUserId && (session as any).customer_details?.email) {
+            try {
+              const email = (session as any).customer_details.email as string;
+              const { data: profilesByEmail } = await supabase
+                .from("user_profiles")
+                .select("user_id")
+                .eq("email", email)
+                .limit(1);
+              const foundByEmail = profilesByEmail?.[0]?.user_id;
+              if (foundByEmail) {
+                supabaseUserId = foundByEmail;
+                console.log('Resolved supabase user id from customer email:', supabaseUserId);
+              }
+            } catch (err) {
+              console.error('Error resolving user by customer email', err);
+            }
+          }
+
           if (supabaseUserId) {
             await supabase
               .from("user_profiles")
@@ -98,7 +136,40 @@ serve(async (req) => {
                 },
                 { onConflict: "user_id" }
               );
+            console.log('Updated user_profiles for user:', supabaseUserId, 'plan:', planInfo?.plan || 'pro');
+          } else {
+            console.warn('Could not resolve supabase user id for session', session.id, 'customer', customerId);
           }
+        }
+        break;
+      }
+      case "customer.subscription.created": {
+        const subscription = event.data.object as Stripe.Subscription;
+        const customerId = subscription.customer as string;
+        const priceId = subscription.items.data[0]?.price.id;
+        const planInfo = priceId ? PRICE_TO_PLAN[priceId] : undefined;
+        const status = subscription.status;
+        const currentPeriodEnd = subscription.current_period_end
+          ? new Date(subscription.current_period_end * 1000).toISOString()
+          : null;
+
+        const { data: profiles } = await supabase
+          .from("user_profiles")
+          .select("user_id")
+          .eq("stripe_customer_id", customerId)
+          .limit(1);
+
+        const userId = profiles?.[0]?.user_id;
+        if (userId) {
+          await supabase
+            .from("user_profiles")
+            .update({
+              plan: planInfo?.plan || "pro",
+              subscription_status: status as string,
+              current_period_end: currentPeriodEnd,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("user_id", userId);
         }
         break;
       }
@@ -109,6 +180,8 @@ serve(async (req) => {
         const currentPeriodEnd = subscription.current_period_end
           ? new Date(subscription.current_period_end * 1000).toISOString()
           : null;
+        const priceId = subscription.items.data[0]?.price?.id;
+        const planInfo = priceId ? PRICE_TO_PLAN[priceId] : undefined;
 
         // Find user by stripe_customer_id
         const { data: profiles } = await supabase
@@ -122,6 +195,7 @@ serve(async (req) => {
           await supabase
             .from("user_profiles")
             .update({
+              plan: planInfo?.plan || "pro", // Default to 'pro' if planInfo is undefined
               subscription_status: status as string,
               current_period_end: currentPeriodEnd,
               updated_at: new Date().toISOString(),
@@ -166,5 +240,3 @@ serve(async (req) => {
     return new Response("Server error", { status: 500, headers: corsHeaders });
   }
 });
-
-

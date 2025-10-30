@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ const SignIn = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { signIn, signInWithGoogle, signInWithFacebook } = useAuth();
   const { toast } = useToast();
 
@@ -53,7 +54,9 @@ const SignIn = () => {
       }
 
       toast({ title: "Success!", description: response.message });
-      navigate("/app/dashboard");
+      const params = new URLSearchParams(location.search);
+      const redirectUrl = params.get("redirect");
+      navigate(redirectUrl || "/app/dashboard");
     } catch (error: unknown) {
       toast({
         title: "Error",

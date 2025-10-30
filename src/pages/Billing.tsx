@@ -1,12 +1,33 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PricingPlans from "@/components/PricingPlans";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
+import { useToast } from "@/components/ui/use-toast";
+import { useLocation } from "react-router-dom";
 
 export default function Billing() {
   const { user } = useAuth();
   const { profile } = useProfile(user?.id ?? null);
+  const { toast } = useToast();
+  const location = useLocation();
+
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    if (query.get("checkout") === "success") {
+      toast({
+        title: "Subscription updated!",
+        description: "Your plan has been successfully updated.",
+      });
+    }
+    if (query.get("checkout") === "cancel") {
+      toast({
+        title: "Checkout canceled",
+        description: "Your checkout session has been canceled.",
+        variant: "destructive",
+      });
+    }
+  }, [location.search, toast]);
 
   return (
     <div className="space-y-6">
@@ -48,5 +69,3 @@ export default function Billing() {
     </div>
   );
 }
-
-
