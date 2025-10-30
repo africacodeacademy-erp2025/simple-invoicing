@@ -57,7 +57,7 @@ serve(async (req) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
-        if (session.mode === "subscription") {
+        if (session.mode === "subscription" && session.payment_status === "paid") {
           const subscriptionId = (session.subscription as string) || undefined;
           const customerId = (session.customer as string) || undefined;
           const priceId = (session.line_items?.data?.[0]?.price?.id as string) || (session.metadata?.priceId as string) || undefined;
@@ -128,7 +128,7 @@ serve(async (req) => {
                 {
                   user_id: supabaseUserId,
                   plan: planInfo?.plan || "pro",
-                  subscription_status: "active",
+                  subscription_status: "active", // Explicitly set to active on successful checkout
                   stripe_customer_id: customerId || null,
                   stripe_subscription_id: subscriptionId || null,
                   current_period_end: currentPeriodEnd,
@@ -165,7 +165,7 @@ serve(async (req) => {
             .from("user_profiles")
             .update({
               plan: planInfo?.plan || "pro",
-              subscription_status: status as string,
+              subscription_status: status === "active" ? "active" : "incomplete_expired", // Set based on Stripe status
               current_period_end: currentPeriodEnd,
               updated_at: new Date().toISOString(),
             })

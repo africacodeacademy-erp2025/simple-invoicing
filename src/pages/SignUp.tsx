@@ -24,7 +24,7 @@ const SignUp = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { signUp, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { signUp } = useAuth();
   const { toast } = useToast();
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -88,27 +88,6 @@ const SignUp = () => {
     setIsLoading(true);
     try {
       const response = await signInWithGoogle();
-      if (!response.success) {
-        toast({ title: "Error", description: response.message, variant: "destructive" });
-      }
-    } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFacebookSignIn = async () => {
-    setIsLoading(true);
-    try {
-      const response = await signInWithFacebook();
       if (!response.success) {
         toast({ title: "Error", description: response.message, variant: "destructive" });
       }
@@ -354,34 +333,6 @@ const SignUp = () => {
                       Sign in
                     </Link>
                   </p>
-                </div>
-
-                {/* Divider */}
-                <div className="mt-6 relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-border" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                      Or continue with
-                    </span>
-                  </div>
-                </div>
-
-                {/* Social Buttons */}
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="h-11" onClick={handleGoogleSignIn}>
-                    <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
-                      {/* Google SVG Path */}
-                    </svg>
-                    Google
-                  </Button>
-                  <Button variant="outline" className="h-11" onClick={handleFacebookSignIn}>
-                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                      {/* Facebook SVG Path */}
-                    </svg>
-                    Facebook
-                  </Button>
                 </div>
               </CardContent>
             </Card>

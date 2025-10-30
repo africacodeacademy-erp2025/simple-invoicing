@@ -25,7 +25,7 @@ const SignIn = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { signIn } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,48 +57,6 @@ const SignIn = () => {
       const params = new URLSearchParams(location.search);
       const redirectUrl = params.get("redirect");
       navigate(redirectUrl || "/app/dashboard");
-    } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      const response = await signInWithGoogle();
-      if (!response.success) {
-        toast({ title: "Error", description: response.message, variant: "destructive" });
-      }
-    } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFacebookSignIn = async () => {
-    setIsLoading(true);
-    try {
-      const response = await signInWithFacebook();
-      if (!response.success) {
-        toast({ title: "Error", description: response.message, variant: "destructive" });
-      }
     } catch (error: unknown) {
       toast({
         title: "Error",
