@@ -16,7 +16,7 @@ export const CreativeTemplate = forwardRef<
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
-    return new Date(dateString).toLocaleDate-String("en-US", {
+    return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -35,36 +35,33 @@ export const CreativeTemplate = forwardRef<
 
       <div className="relative p-8 space-y-8">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 rounded-2xl text-white">
-          <div className="flex justify-between items-start">
-            <div className="space-y-2">
-              {invoiceData.businessInfo.logo && (
-                <div
-                  className="mb-4 bg-white/20 rounded-lg p-2"
-                  style={{ maxWidth: "200px", maxHeight: "80px" }}
-                >
-                  <img
-                    src={
-                      typeof invoiceData.businessInfo.logo === "string"
-                        ? invoiceData.businessInfo.logo
-                        : URL.createObjectURL(invoiceData.businessInfo.logo)
-                    }
-                    alt="Logo"
-                    className="max-w-full max-h-full object-contain"
-                    style={{ width: "auto", height: "auto" }}
-                  />
-                </div>
-              )}
-              <h1 className="text-3xl font-bold">
+        <div className="flex justify-between items-start mb-8">
+          {/* Logo and Business Name */}
+          <div className="flex items-center gap-4">
+            {invoiceData.businessInfo.logo && (
+              <div className="w-20 h-20 flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg">
+                <img
+                  src={
+                    typeof invoiceData.businessInfo.logo === "string"
+                      ? invoiceData.businessInfo.logo
+                      : URL.createObjectURL(invoiceData.businessInfo.logo)
+                  }
+                  alt="Logo"
+                  className="max-w-full max-h-full object-contain"
+                />
+              </div>
+            )}
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">
                 {invoiceData.businessInfo.name || "Business Name"}
               </h1>
-              <div className="text-blue-100 space-y-1">
+              <div className="text-gray-500 text-sm mt-1">
                 {invoiceData.businessInfo.address && (
-                  <div className="whitespace-pre-line text-sm">
+                  <div className="whitespace-pre-line">
                     {invoiceData.businessInfo.address}
                   </div>
                 )}
-                <div className="flex gap-4 text-sm">
+                <div className="flex gap-4">
                   {invoiceData.businessInfo.email && (
                     <span>{invoiceData.businessInfo.email}</span>
                   )}
@@ -74,11 +71,14 @@ export const CreativeTemplate = forwardRef<
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="text-right">
-              <div className="text-2xl font-bold">INVOICE</div>
-              <div className="text-blue-100">#{invoiceData.invoiceNumber}</div>
-            </div>
+          {/* Invoice Title */}
+          <div className="text-right">
+            <h2 className="text-4xl font-bold text-gray-400 uppercase">
+              Invoice
+            </h2>
+            <p className="text-gray-500 mt-1">#{invoiceData.invoiceNumber}</p>
           </div>
         </div>
 

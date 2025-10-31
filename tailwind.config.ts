@@ -18,6 +18,9 @@ const config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-sans)"],
+      },
       backgroundImage: {
         "primary-gradient": "linear-gradient(to right, hsl(var(--primary)), hsl(var(--primary-accent)))",
       },
