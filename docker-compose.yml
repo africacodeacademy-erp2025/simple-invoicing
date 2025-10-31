@@ -6,7 +6,11 @@ services:
       dockerfile: Dockerfile.dev
     container_name: simple-invoicing-dev
     ports:
+<<<<<<< HEAD
       - 8080:8080
+=======
+      - "8071:8080"
+>>>>>>> a3d7d9415166386ea4b8141b87a050d1b4243faa
     volumes:
       - .:/app
       - node_modules:/app/node_modules
@@ -17,7 +21,10 @@ services:
       - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
       - VITE_STRIPE_PRICE_PRO_MONTHLY=${VITE_STRIPE_PRICE_PRO_MONTHLY}
       - VITE_STRIPE_PRICE_BUSINESS_MONTHLY=${VITE_STRIPE_PRICE_BUSINESS_MONTHLY}
+<<<<<<< HEAD
       
+=======
+>>>>>>> a3d7d9415166386ea4b8141b87a050d1b4243faa
     command: npm run dev
     stdin_open: true
     tty: true
@@ -25,6 +32,10 @@ services:
       - invoicing-network
     profiles:
       - dev
+<<<<<<< HEAD
+=======
+
+>>>>>>> a3d7d9415166386ea4b8141b87a050d1b4243faa
   # Production service
   app-prod:
     build:
@@ -36,17 +47,33 @@ services:
         - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
         - VITE_STRIPE_PRICE_PRO_MONTHLY=${VITE_STRIPE_PRICE_PRO_MONTHLY}
         - VITE_STRIPE_PRICE_BUSINESS_MONTHLY=${VITE_STRIPE_PRICE_BUSINESS_MONTHLY}
+<<<<<<< HEAD
         
     container_name: simple-invoicing-prod
     ports:
       - 8070:80
+=======
+    container_name: simple-invoicing-prod
+    ports:
+      - "8070:80"
+>>>>>>> a3d7d9415166386ea4b8141b87a050d1b4243faa
     networks:
       - invoicing-network
     restart: unless-stopped
     profiles:
       - prod
+<<<<<<< HEAD
 networks:
   invoicing-network:
     driver: bridge
 volumes:
   node_modules: null
+=======
+
+networks:
+  invoicing-network:
+    driver: bridge
+
+volumes:
+  node_modules:
+>>>>>>> a3d7d9415166386ea4b8141b87a050d1b4243faa
