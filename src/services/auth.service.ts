@@ -71,6 +71,39 @@ export class AuthService {
   }
 
   /**
+   * Request a password reset email for the given address
+   */
+  static async requestPasswordReset(email: string): Promise<AuthResponse<null>> {
+    try {
+      // Supabase v2 API
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+
+      if (error) {
+        return {
+          data: null,
+          error,
+          success: false,
+          message: this.getErrorMessage(error),
+        };
+      }
+
+      return {
+        data: null,
+        error: null,
+        success: true,
+        message: "If an account exists for this email, a password reset link has been sent.",
+      };
+    } catch (error) {
+      return {
+        data: null,
+        error: error as AuthError,
+        success: false,
+        message: "An unexpected error occurred while requesting password reset.",
+      };
+    }
+  }
+
+  /**
    * Sign in a user with email and password
    */
   static async signIn({

@@ -10,6 +10,7 @@ import { DashboardLayout } from "./components/layouts/DashboardLayout";
 import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import CreateInvoice from "./pages/CreateInvoice";
 import EditInvoice from "./pages/EditInvoice";
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/" element={<Landing />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
 
             {/* Protected Dashboard Routes */}
             <Route
