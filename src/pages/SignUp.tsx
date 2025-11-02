@@ -10,6 +10,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ValidationService } from "@/services/validation.service";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import TermsOfServiceModal from "@/components/TermsOfServiceModal";
+import PrivacyPolicyModal from "@/components/PrivacyPolicyModal";
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -23,8 +25,10 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const { toast } = useToast();
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -299,13 +303,19 @@ const SignUp = () => {
                     />
                     <Label htmlFor="terms" className="text-sm leading-relaxed">
                       I agree to the{" "}
-                      <Link to="/terms" className="text-primary hover:underline">
+                      <span
+                        onClick={() => setIsTermsModalOpen(true)}
+                        className="text-primary hover:underline cursor-pointer"
+                      >
                         Terms of Service
-                      </Link>{" "}
+                      </span>{" "}
                       and{" "}
-                      <Link to="/privacy" className="text-primary hover:underline">
+                      <span
+                        onClick={() => setIsPrivacyModalOpen(true)}
+                        className="text-primary hover:underline cursor-pointer"
+                      >
                         Privacy Policy
-                      </Link>
+                      </span>
                     </Label>
                   </div>
 
@@ -344,6 +354,15 @@ const SignUp = () => {
       <footer className="border-t border-border/50 bg-muted/20 py-4 text-center text-xs text-foreground/60">
         &copy; 2025 Simple Invoicing. All rights reserved.
       </footer>
+
+      <TermsOfServiceModal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+      />
+      <PrivacyPolicyModal
+        isOpen={isPrivacyModalOpen}
+        onClose={() => setIsPrivacyModalOpen(false)}
+      />
     </div>
   );
 };

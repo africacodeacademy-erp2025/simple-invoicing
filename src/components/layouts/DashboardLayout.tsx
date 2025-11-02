@@ -18,6 +18,7 @@ const getPageTitle = (pathname: string) => {
     "/app/clients": "Clients",
     "/app/templates": "Templates",
     "/app/profile": "Profile",
+    "/app/settings": "Settings", // Add the new Settings route title
   };
 
   return routes[pathname] || "Dashboard";
