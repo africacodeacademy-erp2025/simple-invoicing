@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Download, ArrowLeft, Eye, Loader2, Mail, Send } from "lucide-react";
+import { Download, ArrowLeft, Eye, Loader2, Mail, Send, Printer } from "lucide-react";
 import { InvoicePreview } from "@/components/InvoicePreview";
 import { InvoiceData, currencies } from "@/types/invoice";
 import { InvoiceTemplate } from "@/types/templates";
@@ -203,6 +203,71 @@ const ViewInvoice = () => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handlePrint = () => {
+    const invoiceElement = invoicePreviewRef.current;
+    if (!invoiceElement) {
+      toast({
+        title: "Error",
+        description: "Invoice preview not found.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "absolute";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      toast({
+        title: "Error",
+        description: "Could not create a document for printing.",
+        variant: "destructive",
+      });
+      document.body.removeChild(iframe);
+      return;
+    }
+
+    // It's crucial to write to the document to create the basic HTML structure
+    doc.open();
+    doc.write(`<!DOCTYPE html><html><head><title>Invoice #${invoiceData.invoiceNumber}</title></head><body></body></html>`);
+    doc.close();
+
+    // Clone the invoice element to avoid moving it from the page
+    const clonedElement = invoiceElement.cloneNode(true) as HTMLElement;
+
+    // Copy all style and link tags from the main document's head to the iframe's head
+    const styles = document.head.querySelectorAll('style, link[rel="stylesheet"]');
+    styles.forEach(style => {
+      doc.head.appendChild(style.cloneNode(true));
+    });
+
+    // Append the cloned invoice content to the iframe's body
+    doc.body.appendChild(clonedElement);
+
+    // Wait a brief moment for rendering after stylesheet loads
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (e) {
+        console.error("Printing failed:", e);
+        toast({
+          title: "Error",
+          description: "Printing failed. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        // Clean up the iframe
+        document.body.removeChild(iframe);
+      }
+    }, 500); // A delay to ensure styles are applied
   };
 
   const handleSendEmail = async () => {
@@ -509,6 +574,13 @@ const ViewInvoice = () => {
                 )}
               </>
             )}
+          </Button>
+          <Button
+            onClick={handlePrint}
+            className="bg-primary hover:opacity-90 transition-opacity"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Print Invoice
           </Button>
         </div>
       </div>

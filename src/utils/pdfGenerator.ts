@@ -105,16 +105,16 @@ export const generatePDF = async (
 
     // Handle multiple pages if content is too tall
     let heightLeft = imgHeight;
-    let position = 0;
+    let position = -5; // Start with a negative margin to account for the top margin
 
     // Add first page
     pdf.addImage(imgData, "PNG", 5, 5, imgWidth, imgHeight);
-    heightLeft -= pdfHeight - 10;
+    heightLeft -= pdfHeight - 10; // 5mm margin top and bottom
 
     // Add additional pages if needed
-    while (heightLeft >= 0) {
+    while (heightLeft > 0) {
+      position -= pdfHeight - 10; // Move the position up by the height of a page
       pdf.addPage();
-      position = heightLeft - imgHeight;
       pdf.addImage(imgData, "PNG", 5, position, imgWidth, imgHeight);
       heightLeft -= pdfHeight - 10;
     }
@@ -139,11 +139,29 @@ export const generatePDFBuffer = async (
   invoiceElement: HTMLElement
 ): Promise<Uint8Array> => {
   try {
-    const canvas = await html2canvas(invoiceElement, {
-      scale: 1, // Reduce scale to potentially smaller PDF size
+    // Create a temporary container for accurate rendering
+    const tempContainer = document.createElement("div");
+    tempContainer.style.position = "absolute";
+    tempContainer.style.left = "-9999px";
+    tempContainer.style.width = "210mm"; // A4 width
+    tempContainer.style.backgroundColor = "#ffffff";
+    tempContainer.style.padding = "5mm";
+    document.body.appendChild(tempContainer);
+
+    const clonedElement = invoiceElement.cloneNode(true) as HTMLElement;
+    clonedElement.style.width = "100%";
+    clonedElement.style.maxWidth = "none";
+    clonedElement.style.boxShadow = "none";
+    clonedElement.style.border = "none";
+    tempContainer.appendChild(clonedElement);
+
+    const canvas = await html2canvas(tempContainer, {
+      scale: 2, // Higher scale for better quality
       useCORS: true,
       allowTaint: true,
       backgroundColor: "#ffffff",
+      width: tempContainer.scrollWidth,
+      height: tempContainer.scrollHeight,
     });
 
     const imgData = canvas.toDataURL("image/png");
@@ -151,21 +169,23 @@ export const generatePDFBuffer = async (
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    const imgWidth = pdfWidth - 20;
+    const imgWidth = pdfWidth - 10; // 5mm margins
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    let finalWidth = imgWidth;
-    let finalHeight = imgHeight;
+    let heightLeft = imgHeight;
+    let position = -5; // Initial negative position
 
-    if (imgHeight > pdfHeight - 20) {
-      finalHeight = pdfHeight - 20;
-      finalWidth = (canvas.width * finalHeight) / canvas.height;
+    pdf.addImage(imgData, "PNG", 5, 5, imgWidth, imgHeight);
+    heightLeft -= pdfHeight - 10;
+
+    while (heightLeft > 0) {
+      position -= pdfHeight - 10;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 5, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight - 10;
     }
 
-    const xOffset = (pdfWidth - finalWidth) / 2;
-    const yOffset = (pdfHeight - finalHeight) / 2;
-
-    pdf.addImage(imgData, "PNG", xOffset, yOffset, finalWidth, finalHeight);
+    document.body.removeChild(tempContainer);
 
     const arrayBuffer = pdf.output("arraybuffer");
     return new Uint8Array(arrayBuffer);

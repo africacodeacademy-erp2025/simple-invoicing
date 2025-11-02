@@ -28,7 +28,7 @@ export const MinimalTemplate = forwardRef<HTMLDivElement, MinimalTemplateProps>(
     return (
       <div
         ref={ref}
-        className="w-[800px] bg-white p-10 font-sans text-gray-800"
+        className="w-[800px] bg-white p-10 font-sans text-gray-800 print:shadow-none print:p-0 print:m-0"
       >
         {/* Header */}
         <div className="flex justify-between items-start mb-10">
