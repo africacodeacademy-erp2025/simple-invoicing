@@ -11,6 +11,7 @@ import Landing from "./pages/Landing";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import CreateInvoice from "./pages/CreateInvoice";
 import EditInvoice from "./pages/EditInvoice";
@@ -22,6 +23,7 @@ import Profile from "./pages/Profile";
 import Billing from "./pages/Billing";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import Settings from "./pages/Settings"; // Import the new Settings component
 
 const queryClient = new QueryClient();
 
@@ -43,6 +45,7 @@ const App = () => (
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Protected Dashboard Routes */}
             <Route
@@ -62,6 +65,7 @@ const App = () => (
               <Route path="clients" element={<Clients />} />
               <Route path="templates" element={<Templates />} />
               <Route path="profile" element={<Profile />} />
+              <Route path="settings" element={<Settings />} /> {/* Add the new Settings route */}
               <Route path="billing" element={<Billing />} />
             </Route>
 

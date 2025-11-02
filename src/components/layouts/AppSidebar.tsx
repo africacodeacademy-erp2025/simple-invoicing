@@ -40,9 +40,14 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen }) => {
       label: "Billing",
     },
     {
-      path: "/app/Profile",
+      path: "/app/profile",
       icon: <User className="h-4 w-4" />,
       label: "Profile",
+    },
+    {
+      path: "/app/settings", // New settings link
+      icon: <Settings className="h-4 w-4" />,
+      label: "Settings",
     },
   ];
 
@@ -85,19 +90,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen }) => {
 
         {/* Footer */}
         <div className="mt-auto border-t p-4 space-y-2">
-          <NavLink
-            to="/app/profile"
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2 transition-colors duration-200 ${(
-                isActive
-                  ? "bg-muted font-semibold"
-                  : "text-muted-foreground hover:bg-muted/50"
-              )}`
-            }
-          >
-            <Settings className="h-4 w-4" />
-            <span>Settings</span>
-          </NavLink>
           <Button
             variant="ghost"
             className="w-full justify-start text-muted-foreground hover:bg-muted/50"

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileText, Eye, Palette, Save } from "lucide-react";
+import { Download, FileText, Eye, Palette, Save, Printer } from "lucide-react"; // Import Printer icon
 import { InvoiceForm } from "@/components/InvoiceForm";
 import { InvoicePreview } from "@/components/InvoicePreview";
 import { TemplateSelector } from "@/components/TemplateSelector";
@@ -251,6 +251,10 @@ const CreateInvoice = () => {
               <Download className="h-4 w-4 mr-2"/>Download PDF
               {!canExportPDF && <span className="ml-2 text-xs px-1.5 py-0.5 bg-yellow-400 text-yellow-900 rounded">Pro</span>}
             </>}
+          </Button>
+
+          <Button onClick={() => window.print()} variant="outline" className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700">
+            <Printer className="h-4 w-4 mr-2"/>Print Invoice
           </Button>
         </div>
       </div>

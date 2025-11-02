@@ -215,6 +215,62 @@ export class AuthController {
   }
 
   /**
+   * Update user password
+   */
+  static async updateUserPassword(password: string): Promise<AuthControllerResponse<null>> {
+    try {
+      const response = await AuthService.updateUserPassword(password);
+      if (!response.success) {
+        return {
+          success: false,
+          message: response.message || "Failed to update password",
+          error: response.error?.message,
+        };
+      }
+      return {
+        success: true,
+        data: null,
+        message: response.message!,
+      };
+    } catch (error) {
+      console.error("AuthController.updateUserPassword error:", error);
+      return {
+        success: false,
+        message: "An unexpected error occurred during password update",
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  /**
+   * Delete user account
+   */
+  static async deleteUser(): Promise<AuthControllerResponse<null>> {
+    try {
+      const response = await AuthService.deleteUser();
+      if (!response.success) {
+        return {
+          success: false,
+          message: response.message || "Failed to delete account",
+          error: response.error?.message,
+        };
+      }
+      return {
+        success: true,
+        data: null,
+        message: response.message!,
+      };
+    } catch (error) {
+      console.error("AuthController.deleteUser error:", error);
+      return {
+        success: false,
+        message: "An unexpected error occurred during account deletion",
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  /**
    * Get current session
    */
   static async getCurrentSession(): Promise<
