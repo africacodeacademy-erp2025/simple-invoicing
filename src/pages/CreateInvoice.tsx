@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileText, Eye, Palette, Save } from "lucide-react";
+import { Download, FileText, Eye, Palette, Save, Printer } from "lucide-react"; // Import Printer icon
 import { InvoiceForm } from "@/components/InvoiceForm";
 import { InvoicePreview } from "@/components/InvoicePreview";
 import { TemplateSelector } from "@/components/TemplateSelector";
@@ -22,13 +22,14 @@ import { ModernTemplate } from "@/components/templates/ModernTemplate";
 import { CorporateTemplate } from "@/components/templates/CorporateTemplate";
 import { CreativeTemplate } from "@/components/templates/CreativeTemplate";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PlanAccessService, PlanTier } from "@/services/planAccess.service"; // Import PlanAccessService and PlanTier
 
 const availableTemplates = [
-  { id: InvoiceTemplate.MINIMAL, name: "Minimal", component: MinimalTemplate, isPremium: true },
-  { id: InvoiceTemplate.CLASSIC, name: "Classic", component: ClassicTemplate, isPremium: false },
-  { id: InvoiceTemplate.MODERN, name: "Modern", component: ModernTemplate, isPremium: false },
-  { id: InvoiceTemplate.CORPORATE, name: "Corporate", component: CorporateTemplate, isPremium: true },
-  { id: InvoiceTemplate.CREATIVE, name: "Creative", component: CreativeTemplate, isPremium: true },
+  { id: InvoiceTemplate.MODERN, name: "Modern", component: ModernTemplate, isPremium: false, index: 0 }, // Modern is the default free template
+  { id: InvoiceTemplate.MINIMAL, name: "Minimal", component: MinimalTemplate, isPremium: true, index: 1 },
+  { id: InvoiceTemplate.CLASSIC, name: "Classic", component: ClassicTemplate, isPremium: true, index: 2 },
+  { id: InvoiceTemplate.CORPORATE, name: "Corporate", component: CorporateTemplate, isPremium: true, index: 3 },
+  { id: InvoiceTemplate.CREATIVE, name: "Creative", component: CreativeTemplate, isPremium: true, index: 4 },
 ];
 
 const CreateInvoice = () => {
@@ -36,17 +37,21 @@ const CreateInvoice = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>(InvoiceTemplate.MODERN);
   const invoicePreviewRef = useRef<HTMLDivElement>(null);
+  // This ref will hold the DOM element of the InvoicePreview component
+  // which is rendered in the hidden div. This is used to ensure we capture
+  // the correct DOM after a template change.
+  const capturedPreviewRef = useRef<HTMLDivElement | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallFeature, setPaywallFeature] = useState('');
-  const [paywallPlan, setPaywallPlan] = useState<'pro' | 'business' | 'enterprise'>('pro');
+  const [paywallPlan, setPaywallPlan] = useState<PlanTier>('pro');
 
   const { user } = useAuth();
   const { profile, profileLoading } = useProfile(user?.id || null);
   const navigate = useNavigate();
 
-  const { canUsePremiumTemplates, canExportPDFEffective, canUseRecurringEffective, effectivePlanLimits } = usePlanAccess();
+  const { canExportPDF, canUseRecurring, maxTemplates, canUseAI } = usePlanAccess(); // Destructure directly from features
 
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     invoiceNumber: "",
@@ -99,35 +104,13 @@ const CreateInvoice = () => {
   }, []);
 
   useEffect(() => {
-    if (profile && !profileLoading) {
-      setInvoiceData((prevData) => {
-        const invoiceNumber = prevData.invoiceNumber || generateInvoiceNumber(profile.invoice_prefix);
-        const currency = profile.default_currency || "USD";
-        const taxRate = profile.default_tax_rate || 0;
-        return {
-          ...prevData,
-          invoiceNumber,
-          currency,
-          taxRate,
-          businessInfo: {
-            ...prevData.businessInfo,
-            name: profile.business_name || prevData.businessInfo.name,
-            email: profile.email || prevData.businessInfo.email,
-            phone: profile.phone || prevData.businessInfo.phone,
-            address: profile.address || prevData.businessInfo.address,
-            logo: profile.logo_url || prevData.businessInfo.logo,
-          },
-          bankingInfo: {
-            ...prevData.bankingInfo,
-            bankName: profile.bank_name || prevData.bankingInfo.bankName,
-            accountNumber: profile.account_number || prevData.bankingInfo.accountNumber,
-            swiftCode: profile.swift_code || prevData.bankingInfo.swiftCode,
-            iban: profile.iban || prevData.bankingInfo.iban,
-          },
-        };
-      });
+    // When selectedTemplate changes, update capturedPreviewRef to point to the new DOM element.
+    // This ensures that when generatePDF or handlePrintInvoice are called, they use the
+    // most up-to-date preview content.
+    if (invoicePreviewRef.current) {
+      capturedPreviewRef.current = invoicePreviewRef.current;
     }
-  }, [profile, profileLoading, generateInvoiceNumber]);
+  }, [selectedTemplate]); // Re-run this effect whenever selectedTemplate changes
 
   const handleSelectTemplate = (template: TemplateInfo) => {
     setSelectedTemplate(template.id);
@@ -135,27 +118,31 @@ const CreateInvoice = () => {
 
   const handleGeneratePDF = async () => {
     const selectedTemplateInfo = availableTemplates.find(t => t.id === selectedTemplate);
-    if (selectedTemplateInfo?.isPremium && !canUsePremiumTemplates) {
-      toast({ title: "Premium Feature", description: "This template requires a Pro plan.", variant: "destructive" });
-      setPaywallFeature("Premium Templates");
-      setPaywallPlan("pro");
+    // Check template access using the service directly or a more robust check from usePlanAccess
+    const templateAccessCheck = await PlanAccessService.canUseTemplate(profile?.plan, selectedTemplateInfo?.index ?? 0);
+    if (!templateAccessCheck.allowed) {
+      toast({ title: "Premium Feature", description: templateAccessCheck.reason, variant: "destructive" });
+      setPaywallFeature(`${selectedTemplateInfo?.name} Template`);
+      setPaywallPlan(templateAccessCheck.upgradeRequired || "pro");
       setShowPaywall(true);
       return;
     }
-    if (!canExportPDFEffective) {
+
+    if (!canExportPDF) { // Use canExportPDF directly
       toast({ title: "Premium Feature", description: "PDF export requires Pro plan", variant: "destructive" });
       setPaywallFeature("PDF Export");
       setPaywallPlan("pro");
       setShowPaywall(true);
       return;
     }
-    if (!invoicePreviewRef.current || !invoiceData.businessInfo.name || !invoiceData.clientInfo.name) {
+    // Use capturedPreviewRef.current instead of invoicePreviewRef.current
+    if (!capturedPreviewRef.current || !invoiceData.businessInfo.name || !invoiceData.clientInfo.name) {
       toast({ title: "Error", description: "Invoice data incomplete.", variant: "destructive" });
       return;
     }
     setIsGenerating(true);
     try {
-      await generatePDF(invoicePreviewRef.current, invoiceData);
+      await generatePDF(capturedPreviewRef.current, invoiceData); // Use the captured ref
       toast({ title: "Success!", description: "Invoice PDF downloaded." });
     } catch (error) {
       console.error(error);
@@ -172,15 +159,16 @@ const CreateInvoice = () => {
     }
 
     const selectedTemplateInfo = availableTemplates.find(t => t.id === selectedTemplate);
-    if (selectedTemplateInfo?.isPremium && !canUsePremiumTemplates) {
-      toast({ title: "Premium Feature", description: "This template requires a Pro plan.", variant: "destructive" });
-      setPaywallFeature("Premium Templates");
-      setPaywallPlan("pro");
+    const templateAccessCheck = await PlanAccessService.canUseTemplate(profile?.plan, selectedTemplateInfo?.index ?? 0);
+    if (!templateAccessCheck.allowed) {
+      toast({ title: "Premium Feature", description: templateAccessCheck.reason, variant: "destructive" });
+      setPaywallFeature(`${selectedTemplateInfo?.name} Template`);
+      setPaywallPlan(templateAccessCheck.upgradeRequired || "pro");
       setShowPaywall(true);
       return;
     }
 
-    if (invoiceData.isRecurring && !canUseRecurringEffective) {
+    if (invoiceData.isRecurring && !canUseRecurring) { // Use canUseRecurring directly
       toast({ title: "Premium Feature", description: "Recurring invoices require Pro plan", variant: "destructive" });
       setPaywallFeature("Recurring Invoices");
       setPaywallPlan("pro");
@@ -203,12 +191,19 @@ const CreateInvoice = () => {
 
     setIsSaving(true);
     try {
-      const response = await InvoiceController.saveInvoice(user.id, invoiceData, selectedTemplate);
+      // Use the ProtectedInvoiceController to ensure all access checks are performed
+      const response = await ProtectedInvoiceController.createInvoice(user.id, {
+        ...invoiceData,
+        template: selectedTemplate,
+        userPlan: profile?.plan, // Pass the user's plan for checks
+      });
+
       if (response.success) {
         toast({ title: "Success!", description: "Invoice created successfully." });
-        if (response.data?.id) navigate(`/app/view-invoice/${response.data.id}`);
+        const savedInvoiceId = Array.isArray(response.data) ? response.data[0]?.id : response.data?.id;
+        if (savedInvoiceId) navigate(`/app/view-invoice/${savedInvoiceId}`);
       } else {
-        toast({ title: "Error", description: response.message || "Validation error", variant: "destructive" });
+        toast({ title: "Error", description: response.error || "Failed to create invoice.", variant: "destructive" });
       }
     } catch (error) {
       console.error(error);
@@ -219,6 +214,82 @@ const CreateInvoice = () => {
   };
   
   const SelectedTemplateComponent = availableTemplates.find(t => t.id === selectedTemplate)?.component || ModernTemplate;
+
+  const handlePrintInvoice = () => {
+    // Use capturedPreviewRef.current instead of invoicePreviewRef.current
+    const invoiceContent = capturedPreviewRef.current;
+    if (!invoiceContent) {
+      toast({ title: "Error", description: "Invoice preview not found.", variant: "destructive" });
+      return;
+    }
+
+    // Create a temporary iframe
+    const iframe = document.createElement('iframe');
+    iframe.style.height = '0';
+    iframe.style.width = '0';
+    iframe.style.position = 'absolute';
+    iframe.style.visibility = 'hidden';
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      toast({ title: "Error", description: "Could not access iframe document.", variant: "destructive" });
+      document.body.removeChild(iframe);
+      return;
+    }
+
+    // Write the basic HTML structure
+    iframeDoc.write(`
+      <html>
+        <head>
+          <title>Print Invoice</title>
+          <style>
+            /* Basic print styles */
+            @media print {
+              body { margin: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          ${invoiceContent.innerHTML}
+        </body>
+      </html>
+    `);
+    iframeDoc.close();
+
+    // Wait for the iframe to load its content before trying to copy styles
+    iframe.onload = () => {
+      const iframeHead = iframe.contentWindow?.document.head;
+      if (iframeHead) {
+        // Copy all stylesheets from the parent document to the iframe
+        Array.from(document.styleSheets).forEach(styleSheet => {
+          if (styleSheet.cssRules) {
+            const styleEl = document.createElement('style');
+            styleEl.textContent = Array.from(styleSheet.cssRules).map(rule => rule.cssText).join('\n');
+            iframeHead.appendChild(styleEl);
+          } else if (styleSheet.href) { // For external stylesheets, try to link them
+            const linkEl = document.createElement('link');
+            linkEl.rel = 'stylesheet';
+            linkEl.href = styleSheet.href;
+            iframeHead.appendChild(linkEl);
+          }
+        });
+      }
+
+      const iframeWindow = iframe.contentWindow;
+      if (iframeWindow) {
+        iframeWindow.focus();
+        iframeWindow.print();
+        // Clean up the iframe after printing
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000); // Give some time for the print dialog to appear
+      } else {
+        toast({ title: "Error", description: "Could not access iframe window.", variant: "destructive" });
+        document.body.removeChild(iframe);
+      }
+    };
+  };
 
   return (
     <div className="space-y-6">
@@ -237,8 +308,12 @@ const CreateInvoice = () => {
             {isGenerating ? <><div className="animate-spin rounded-full h-4 w-4 border-2 border-background border-t-transparent mr-2"/>Generating...</> :
             <>
               <Download className="h-4 w-4 mr-2"/>Download PDF
-              {!canExportPDFEffective && <span className="ml-2 text-xs px-1.5 py-0.5 bg-yellow-400 text-yellow-900 rounded">Pro</span>}
+              {!canExportPDF && <span className="ml-2 text-xs px-1.5 py-0.5 bg-yellow-400 text-yellow-900 rounded">Pro</span>}
             </>}
+          </Button>
+
+          <Button onClick={handlePrintInvoice} variant="outline" className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700">
+            <Printer className="h-4 w-4 mr-2"/>Print Invoice
           </Button>
         </div>
       </div>

@@ -94,34 +94,34 @@ const Landing = () => {
 
       {/* Hero Section */}
       <section
-        className="relative py-20 lg:py-32 bg-cover bg-center text-center"
+        className="relative py-24 lg:py-40 bg-cover bg-center text-center overflow-hidden"
         style={{
           backgroundImage:
             "url('https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')",
         }}
       >
         {/* Darker overlay for readability */}
-        <div className="absolute inset-0 bg-black/70 md:bg-black/60" />
+        <div className="absolute inset-0 bg-black/60 md:bg-black/50" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+          <h1 className="text-4xl md:text-7xl font-extrabold text-white mb-6 drop-shadow-lg">
             Create Professional{" "}
             <span className="bg-primary-gradient bg-clip-text text-transparent">
               Invoices
             </span>{" "}
             in Minutes
           </h1>
-          <p className="text-xl text-white/90 mb-8 max-w-3xl mx-auto">
+          <p className="text-lg md:text-xl text-white/90 mb-10 max-w-3xl mx-auto leading-relaxed">
             Streamline your invoicing process with our powerful and easy-to-use
-            platform.
+            platform. Focus on your business, we'll handle the paperwork.
           </p>
           <div className="flex justify-center">
             <Link to="/signup">
               <Button
                 size="lg"
-                className="bg-primary-gradient hover:opacity-90 text-lg px-8 py-6"
+                className="bg-primary-gradient text-white shadow-lg hover:opacity-95 transition-all duration-300 group"
               >
                 Get Started
-                <ArrowRight className="ml-2 h-5 w-5" />
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
           </div>
@@ -129,30 +129,35 @@ const Landing = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-muted/20">
+      <section className="py-20 lg:py-28 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-12">
+          <h2 className="text-3xl md:text-5xl font-bold mb-16 text-foreground">
             Everything You Need to Manage Invoices
           </h2>
 
           {/* Uniform Grid Layout */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="bg-background rounded-2xl shadow-sm border border-border/50 overflow-hidden hover:shadow-md transition-shadow duration-300"
+                className="bg-card rounded-xl shadow-lg border border-border/70 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out animate-fadeIn"
+                style={{ animationDelay: `${index * 100}ms` }}
               >
                 <img
                   src={feature.image}
                   alt={feature.title}
-                  className="w-full h-48 object-cover"
+                  className="w-full h-52 object-cover"
                 />
                 <div className="p-6 text-left">
                   <div className="flex items-center gap-3 mb-3">
                     {feature.icon}
-                    <h3 className="text-xl font-semibold">{feature.title}</h3>
+                    <h3 className="text-xl font-semibold text-foreground">
+                      {feature.title}
+                    </h3>
                   </div>
-                  <p className="text-foreground/70">{feature.description}</p>
+                  <p className="text-muted-foreground text-base">
+                    {feature.description}
+                  </p>
                 </div>
               </div>
             ))}
@@ -161,14 +166,14 @@ const Landing = () => {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 bg-background">
+      <section className="py-20 lg:py-28 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-3xl md:text-5xl font-bold mb-6 text-foreground">
             Simple Pricing
           </h2>
-          <p className="text-xl text-foreground/80 mb-16">
+          <p className="text-lg md:text-xl text-muted-foreground mb-16 max-w-2xl mx-auto">
             Choose the plan that fits your stage. Start free, upgrade as you
-            grow.
+            grow. Transparent pricing, no hidden fees.
           </p>
           <PricingPlans />
         </div>
@@ -176,28 +181,29 @@ const Landing = () => {
 
       {/* CTA Section */}
       <section
-        className="relative py-20 bg-cover bg-center"
+        className="relative py-24 lg:py-32 bg-cover bg-center overflow-hidden"
         style={{
           backgroundImage:
             "url('https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')",
         }}
       >
         {/* Darker overlay for contrast */}
-        <div className="absolute inset-0 bg-black/80 md:bg-black/70" />
+        <div className="absolute inset-0 bg-black/70 md:bg-black/60" />
         <div className="relative max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 drop-shadow-lg">
             Ready to streamline your invoicing?
           </h2>
-          <p className="text-xl text-white/80 mb-8">
-            Join thousands of businesses already using Simple Invoicing.
+          <p className="text-lg md:text-xl text-white/90 mb-10">
+            Join thousands of businesses already using Simple Invoicing. Get
+            started today and transform your financial workflow.
           </p>
           <Link to="/signup">
             <Button
               size="lg"
-              className="bg-black text-primary hover:bg-white/90 text-lg px-8 py-6"
+              className="bg-white text-primary shadow-lg hover:bg-gray-100 hover:opacity-95 transition-all duration-300 group"
             >
               Get Started
-              <ArrowRight className="ml-2 h-5 w-5" />
+              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,8 @@ const SignIn = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { signIn, signInWithGoogle, signInWithFacebook } = useAuth();
+  const location = useLocation();
+  const { signIn } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,49 +54,9 @@ const SignIn = () => {
       }
 
       toast({ title: "Success!", description: response.message });
-      navigate("/app/dashboard");
-    } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    try {
-      const response = await signInWithGoogle();
-      if (!response.success) {
-        toast({ title: "Error", description: response.message, variant: "destructive" });
-      }
-    } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFacebookSignIn = async () => {
-    setIsLoading(true);
-    try {
-      const response = await signInWithFacebook();
-      if (!response.success) {
-        toast({ title: "Error", description: response.message, variant: "destructive" });
-      }
+      const params = new URLSearchParams(location.search);
+      const redirectUrl = params.get("redirect");
+      navigate(redirectUrl || "/app/dashboard");
     } catch (error: unknown) {
       toast({
         title: "Error",

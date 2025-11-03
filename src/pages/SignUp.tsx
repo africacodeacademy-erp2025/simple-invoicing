@@ -10,6 +10,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ValidationService } from "@/services/validation.service";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import TermsOfServiceModal from "@/components/TermsOfServiceModal";
+import PrivacyPolicyModal from "@/components/PrivacyPolicyModal";
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -23,8 +25,10 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
   const navigate = useNavigate();
-  const { signUp, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const { toast } = useToast();
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -88,27 +92,6 @@ const SignUp = () => {
     setIsLoading(true);
     try {
       const response = await signInWithGoogle();
-      if (!response.success) {
-        toast({ title: "Error", description: response.message, variant: "destructive" });
-      }
-    } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFacebookSignIn = async () => {
-    setIsLoading(true);
-    try {
-      const response = await signInWithFacebook();
       if (!response.success) {
         toast({ title: "Error", description: response.message, variant: "destructive" });
       }
@@ -320,13 +303,19 @@ const SignUp = () => {
                     />
                     <Label htmlFor="terms" className="text-sm leading-relaxed">
                       I agree to the{" "}
-                      <Link to="/terms" className="text-primary hover:underline">
+                      <span
+                        onClick={() => setIsTermsModalOpen(true)}
+                        className="text-primary hover:underline cursor-pointer"
+                      >
                         Terms of Service
-                      </Link>{" "}
+                      </span>{" "}
                       and{" "}
-                      <Link to="/privacy" className="text-primary hover:underline">
+                      <span
+                        onClick={() => setIsPrivacyModalOpen(true)}
+                        className="text-primary hover:underline cursor-pointer"
+                      >
                         Privacy Policy
-                      </Link>
+                      </span>
                     </Label>
                   </div>
 
@@ -355,34 +344,6 @@ const SignUp = () => {
                     </Link>
                   </p>
                 </div>
-
-                {/* Divider */}
-                <div className="mt-6 relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-border" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                      Or continue with
-                    </span>
-                  </div>
-                </div>
-
-                {/* Social Buttons */}
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="h-11" onClick={handleGoogleSignIn}>
-                    <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
-                      {/* Google SVG Path */}
-                    </svg>
-                    Google
-                  </Button>
-                  <Button variant="outline" className="h-11" onClick={handleFacebookSignIn}>
-                    <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                      {/* Facebook SVG Path */}
-                    </svg>
-                    Facebook
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </div>
@@ -393,6 +354,15 @@ const SignUp = () => {
       <footer className="border-t border-border/50 bg-muted/20 py-4 text-center text-xs text-foreground/60">
         &copy; 2025 Simple Invoicing. All rights reserved.
       </footer>
+
+      <TermsOfServiceModal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+      />
+      <PrivacyPolicyModal
+        isOpen={isPrivacyModalOpen}
+        onClose={() => setIsPrivacyModalOpen(false)}
+      />
     </div>
   );
 };

@@ -7,15 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Download, ArrowLeft, Eye, Loader2, Mail, Send } from "lucide-react";
+import { Download, ArrowLeft, Eye, Loader2, Mail, Send, Printer } from "lucide-react";
 import { InvoicePreview } from "@/components/InvoicePreview";
 import { InvoiceData, currencies } from "@/types/invoice";
 import { InvoiceTemplate } from "@/types/templates";
-import { generatePDF } from "@/utils/pdfGenerator";
+import { generatePDF, generatePDFBuffer } from "@/utils/pdfGenerator";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { InvoiceController } from "@/controllers/invoice.controller";
 import { EmailService } from "@/services/email.service";
+import { supabase } from "@/lib/supabase";
 import { usePlanAccess } from "@/hooks/usePlanAccess";
 import { PaywallModal } from "@/components/PaywallModal";
 import { ProtectedInvoiceController } from "@/controllers/invoice.controller.protected";
@@ -39,7 +40,7 @@ const ViewInvoice = () => {
 
   // Get user data
   const { user } = useAuth();
-  const { canExportPDFEffective } = usePlanAccess();
+  const { canExportPDF } = usePlanAccess();
 
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     invoiceNumber: "",
@@ -204,7 +205,81 @@ const ViewInvoice = () => {
     }
   };
 
+  const handlePrint = () => {
+    const invoiceElement = invoicePreviewRef.current;
+    if (!invoiceElement) {
+      toast({
+        title: "Error",
+        description: "Invoice preview not found.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "absolute";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "none";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      toast({
+        title: "Error",
+        description: "Could not create a document for printing.",
+        variant: "destructive",
+      });
+      document.body.removeChild(iframe);
+      return;
+    }
+
+    // It's crucial to write to the document to create the basic HTML structure
+    doc.open();
+    doc.write(`<!DOCTYPE html><html><head><title>Invoice #${invoiceData.invoiceNumber}</title></head><body></body></html>`);
+    doc.close();
+
+    // Clone the invoice element to avoid moving it from the page
+    const clonedElement = invoiceElement.cloneNode(true) as HTMLElement;
+
+    // Copy all style and link tags from the main document's head to the iframe's head
+    const styles = document.head.querySelectorAll('style, link[rel="stylesheet"]');
+    styles.forEach(style => {
+      doc.head.appendChild(style.cloneNode(true));
+    });
+
+    // Append the cloned invoice content to the iframe's body
+    doc.body.appendChild(clonedElement);
+
+    // Wait a brief moment for rendering after stylesheet loads
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (e) {
+        console.error("Printing failed:", e);
+        toast({
+          title: "Error",
+          description: "Printing failed. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        // Clean up the iframe
+        document.body.removeChild(iframe);
+      }
+    }, 500); // A delay to ensure styles are applied
+  };
+
   const handleSendEmail = async () => {
+    if (!id || !user?.id) {
+      toast({
+        title: "Authentication Error",
+        description: "User information is missing. Please try logging out and back in.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!id) {
       toast({
         title: "Error",
@@ -223,8 +298,58 @@ const ViewInvoice = () => {
       return;
     }
 
+    if (!invoicePreviewRef.current) {
+      toast({
+        title: "Error",
+        description: "Invoice preview not available for PDF generation.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSendingEmail(true);
     try {
+      // Generate PDF buffer
+      const pdfBuffer = await generatePDFBuffer(invoicePreviewRef.current);
+      
+      // Define file path for Supabase Storage
+      const fileName = `invoice-${invoiceData.invoiceNumber}-${Date.now()}.pdf`;
+      const filePath = `${user.id}/${fileName}`;
+
+      // Upload the PDF to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('invoice-pdfs')
+        .upload(filePath, pdfBuffer, {
+          contentType: 'application/pdf',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        toast({
+          title: "Storage Error",
+          description: "Failed to upload the invoice PDF. Please try again.",
+          variant: "destructive",
+        });
+        setIsSendingEmail(false);
+        return;
+      }
+
+      // Get the public URL of the uploaded file
+      const { data: urlData } = supabase.storage
+        .from('invoice-pdfs')
+        .getPublicUrl(filePath);
+
+      if (!urlData?.publicUrl) {
+        toast({
+          title: "Storage Error",
+          description: "Failed to get the public URL for the PDF.",
+          variant: "destructive",
+        });
+        setIsSendingEmail(false);
+        return;
+      }
+
       const response = await EmailService.sendInvoiceEmail({
         invoiceId: id,
         recipientEmail: emailData.recipientEmail,
@@ -232,6 +357,7 @@ const ViewInvoice = () => {
         customMessage: emailData.customMessage,
         ccOwner: emailData.ccOwner,
         autoGenerateMessage: emailData.autoGenerateMessage,
+        pdfUrl: urlData.publicUrl,
       });
 
       if (response.success) {
@@ -424,14 +550,14 @@ const ViewInvoice = () => {
 
           <Button
             onClick={() => {
-              if (!canExportPDFEffective) {
+              if (!canExportPDF) {
                 toast({ title: "Premium Feature", description: "PDF export requires a Pro plan or higher", variant: "destructive" });
                 setShowPaywall(true);
                 return;
               }
               void handleGeneratePDF();
             }}
-            disabled={isGenerating || !canExportPDFEffective}
+            disabled={isGenerating || !canExportPDF}
             className="bg-primary hover:opacity-90 transition-opacity"
           >
             {isGenerating ? (
@@ -443,11 +569,18 @@ const ViewInvoice = () => {
               <>
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
-                {!canExportPDFEffective && (
+                {!canExportPDF && (
                   <span className="ml-2 text-xs px-1.5 py-0.5 bg-yellow-400 text-yellow-900 rounded">Pro</span>
                 )}
               </>
             )}
+          </Button>
+          <Button
+            onClick={handlePrint}
+            className="bg-primary hover:opacity-90 transition-opacity"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Print Invoice
           </Button>
         </div>
       </div>

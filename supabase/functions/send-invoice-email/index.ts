@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encode } from "https://deno.land/std@0.177.0/encoding/base64.ts";
 
 // CORS headers
 const corsHeaders = {
@@ -50,11 +51,13 @@ serve(async (req) => {
     }
 
     // --- PARSE REQUEST BODY ---
-    const { invoiceId, recipientEmail, recipientName, customMessage, ccOwner, autoGenerateMessage } = await req.json();
+    const { invoiceId, recipientEmail, recipientName, customMessage, ccOwner, autoGenerateMessage, pdfUrl } = await req.json();
+    
+    console.log("Received pdfUrl:", pdfUrl); // Log the received URL
 
-    if (!invoiceId || !recipientEmail) {
+    if (!invoiceId || !recipientEmail || !pdfUrl) {
       return new Response(
-        JSON.stringify({ success: false, message: "Missing required fields: invoiceId and recipientEmail are required." }),
+        JSON.stringify({ success: false, message: "Missing required fields: invoiceId, recipientEmail, and pdfUrl are required." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -84,6 +87,32 @@ serve(async (req) => {
     const finalMessage = autoGenerateMessage ? generateAutoMessage(invoice, recipientName) : customMessage;
     const htmlContent = generateInvoiceEmailHTML(invoice, finalMessage);
 
+    // --- HANDLE PDF ATTACHMENT ---
+    let pdfAttachment = null;
+    if (pdfUrl) {
+      try {
+        const response = await fetch(pdfUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch PDF: ${response.statusText}`);
+        }
+  const pdfArrayBuffer = await response.arrayBuffer();
+  // Convert ArrayBuffer to Uint8Array before base64 encoding to ensure binary data is encoded correctly
+  const pdfUint8 = new Uint8Array(pdfArrayBuffer);
+  // Use Deno's standard library for robust Base64 encoding
+  const pdfBase64 = encode(pdfUint8);
+  console.log(`PDF attachment size (bytes): ${pdfUint8.length}`);
+  console.log(`PDF base64 prefix: ${pdfBase64.slice(0, 64)}`);
+        pdfAttachment = pdfBase64;
+      } catch (pdfError) {
+        console.error("Error fetching or encoding PDF:", pdfError);
+        // Return an error instead of sending the email without the attachment
+        return new Response(
+          JSON.stringify({ success: false, message: "Server failed to process PDF attachment from storage.", error: pdfError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // --- SENDGRID PAYLOAD ---
     const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
     const sendgridFromEmail = Deno.env.get("SENDGRID_FROM_EMAIL");
@@ -101,11 +130,21 @@ serve(async (req) => {
         {
           to: [{ email: recipientEmail, name: recipientName }],
           ...(ccOwner && profile?.email && { cc: [{ email: profile.email }] }),
-          subject: `Invoice #${invoice.invoice_number} from ${invoice.business_name}`
+          subject: `Invoice #${invoice.invoice_number} from ${invoice.business_name} (with PDF)`
         }
       ],
       from: { email: sendgridFromEmail, name: invoice.business_name || "Easy Charge Pro" },
       content: [{ type: "text/html", value: htmlContent }],
+      ...(pdfAttachment && {
+        attachments: [
+          {
+            content: pdfAttachment,
+            filename: `invoice-${invoice.invoice_number}.pdf`,
+            type: "application/pdf",
+            disposition: "attachment"
+          }
+        ]
+      })
     };
 
     // --- SEND EMAIL VIA SENDGRID ---

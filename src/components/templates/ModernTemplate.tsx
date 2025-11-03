@@ -28,16 +28,14 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
     };
 
     return (
-      <Card className="w-[800px] shadow-medium bg-card-gradient" ref={ref}>
-        <CardContent className="p-8 space-y-8">
+      <Card className="w-[800px] shadow-lg font-sans" ref={ref}>
+        <CardContent className="p-10">
           {/* Header */}
-          <div className="flex justify-between items-start">
-            <div className="space-y-2">
+          <div className="flex justify-between items-start pb-6 mb-8 border-b-2 border-gray-100 print:border-b-2 print:border-gray-800">
+            {/* Left Section: Logo and Invoice Title */}
+            <div className="flex items-center gap-6">
               {invoiceData.businessInfo.logo && (
-                <div
-                  className="mb-4"
-                  style={{ maxWidth: "200px", maxHeight: "80px" }}
-                >
+                <div className="w-24 h-24 flex items-center justify-center">
                   <img
                     src={
                       typeof invoiceData.businessInfo.logo === "string"
@@ -46,157 +44,188 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
                     }
                     alt="Business logo"
                     className="max-w-full max-h-full object-contain"
-                    style={{ width: "auto", height: "auto" }}
                   />
                 </div>
               )}
-              <h1 className="text-3xl font-bold text-primary">INVOICE</h1>
-              <p className="text-muted-foreground">
-                #{invoiceData.invoiceNumber}
-              </p>
+              <div>
+                <h1 className="text-4xl font-bold text-gray-800 print:text-gray-900">INVOICE</h1>
+                <p className="text-gray-500 mt-1 print:text-gray-700">
+                  #{invoiceData.invoiceNumber}
+                </p>
+              </div>
             </div>
 
-            <div className="text-right space-y-1">
-              <h2 className="text-xl font-semibold">
+            {/* Right Section: Business Info */}
+            <div className="text-right">
+              <h2 className="text-2xl font-semibold text-gray-800 print:text-gray-900">
                 {invoiceData.businessInfo.name}
               </h2>
-              {invoiceData.businessInfo.email && (
-                <p className="text-sm text-muted-foreground">
-                  {invoiceData.businessInfo.email}
-                </p>
-              )}
-              {invoiceData.businessInfo.phone && (
-                <p className="text-sm text-muted-foreground">
-                  {invoiceData.businessInfo.phone}
-                </p>
-              )}
               {invoiceData.businessInfo.address && (
-                <div className="text-sm text-muted-foreground whitespace-pre-line">
+                <div className="text-sm text-gray-500 whitespace-pre-line mt-1 print:text-gray-700">
                   {invoiceData.businessInfo.address}
                 </div>
               )}
+              <div className="text-sm text-gray-500 mt-1 print:text-gray-700">
+                {invoiceData.businessInfo.email && (
+                  <span>{invoiceData.businessInfo.email}</span>
+                )}
+                {invoiceData.businessInfo.phone && (
+                  <span className="ml-4">
+                    {invoiceData.businessInfo.phone}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Invoice Details and Bill To */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Bill To:</h3>
-                <div className="space-y-1">
-                  <p className="font-medium">{invoiceData.clientInfo.name}</p>
-                  {invoiceData.clientInfo.email && (
-                    <p className="text-sm text-muted-foreground">
-                      {invoiceData.clientInfo.email}
-                    </p>
-                  )}
-                  {invoiceData.clientInfo.address && (
-                    <div className="text-sm text-muted-foreground whitespace-pre-line">
-                      {invoiceData.clientInfo.address}
-                    </div>
-                  )}
-                </div>
+          {/* Client and Invoice Details */}
+          <div className="grid grid-cols-2 gap-8 mb-8">
+            {/* Bill To */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3 print:text-gray-700">
+                Bill To
+              </h3>
+              <div className="text-gray-800 print:text-gray-900">
+                <p className="font-bold text-lg">
+                  {invoiceData.clientInfo.name}
+                </p>
+                {invoiceData.clientInfo.email && (
+                  <p className="text-sm">{invoiceData.clientInfo.email}</p>
+                )}
+                {invoiceData.clientInfo.address && (
+                  <div className="text-sm whitespace-pre-line mt-1">
+                    {invoiceData.clientInfo.address}
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Issue Date:</span>
-                  <span>{formatDate(invoiceData.date)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Due Date:</span>
-                  <span>{formatDate(invoiceData.dueDate)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Currency:</span>
-                  <span>{invoiceData.currency}</span>
-                </div>
-              </div>
+            {/* Invoice Info */}
+            <div className="text-right">
+              <table className="w-full">
+                <tbody>
+                  <tr>
+                    <td className="text-sm font-semibold text-gray-500 uppercase pr-4 print:text-gray-700">
+                      Issue Date:
+                    </td>
+                    <td className="text-gray-800 print:text-gray-900">
+                      {formatDate(invoiceData.date)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="text-sm font-semibold text-gray-500 uppercase pr-4 print:text-gray-700">
+                      Due Date:
+                    </td>
+                    <td className="text-gray-800 print:text-gray-900">
+                      {formatDate(invoiceData.dueDate)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="text-sm font-semibold text-gray-500 uppercase pr-4 print:text-gray-700">
+                      Currency:
+                    </td>
+                    <td className="text-gray-800 print:text-gray-900">{invoiceData.currency}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
           {/* Line Items */}
           {invoiceData.lineItems.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Items</h3>
-
-              <div className="overflow-hidden rounded-lg border">
-                <table className="w-full">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="text-left p-4 font-medium">Description</th>
-                      <th className="text-right p-4 font-medium">Qty</th>
-                      <th className="text-right p-4 font-medium">Rate</th>
-                      <th className="text-right p-4 font-medium">Amount</th>
+            <div className="mb-8">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 border-b border-gray-200 print:bg-gray-200 print:border-b-2 print:border-gray-800">
+                  <tr>
+                    <th className="p-4 font-semibold text-sm text-gray-600 uppercase print:text-gray-800">
+                      Description
+                    </th>
+                    <th className="p-4 font-semibold text-sm text-gray-600 uppercase text-right w-24 print:text-gray-800">
+                      Qty
+                    </th>
+                    <th className="p-4 font-semibold text-sm text-gray-600 uppercase text-right w-32 print:text-gray-800">
+                      Rate
+                    </th>
+                    <th className="p-4 font-semibold text-sm text-gray-600 uppercase text-right w-40 print:text-gray-800">
+                      Amount
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoiceData.lineItems.map((item) => (
+                    <tr key={item.id} className="border-b border-gray-100 print:border-b print:border-gray-300">
+                      <td className="p-4">
+                        <div className="whitespace-pre-line text-gray-800 print:text-gray-900">
+                          {item.description}
+                        </div>
+                      </td>
+                      <td className="p-4 text-right text-gray-600 print:text-gray-800">
+                        {item.quantity}
+                      </td>
+                      <td className="p-4 text-right text-gray-600 print:text-gray-800">
+                        {formatCurrency(item.rate)}
+                      </td>
+                      <td className="p-4 text-right font-semibold text-gray-800 print:text-gray-900">
+                        {formatCurrency(item.amount)}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {invoiceData.lineItems.map((item, index) => (
-                      <tr
-                        key={item.id}
-                        className={
-                          index % 2 === 0 ? "bg-background" : "bg-muted/30"
-                        }
-                      >
-                        <td className="p-4">
-                          <div className="whitespace-pre-line">
-                            {item.description}
-                          </div>
-                        </td>
-                        <td className="text-right p-4">{item.quantity}</td>
-                        <td className="text-right p-4">
-                          {formatCurrency(item.rate)}
-                        </td>
-                        <td className="text-right p-4 font-medium">
-                          {formatCurrency(item.amount)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Totals */}
-              <div className="flex justify-end">
-                <div className="w-full max-w-sm space-y-2">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>{formatCurrency(invoiceData.subtotal)}</span>
-                  </div>
-
-                  {invoiceData.discountRate > 0 && (
-                    <div className="flex justify-between text-success">
-                      <span>Discount ({invoiceData.discountRate}%):</span>
-                      <span>-{formatCurrency(invoiceData.discountAmount)}</span>
-                    </div>
-                  )}
-
-                  {invoiceData.taxRate > 0 && (
-                    <div className="flex justify-between">
-                      <span>Tax ({invoiceData.taxRate}%):</span>
-                      <span>{formatCurrency(invoiceData.taxAmount)}</span>
-                    </div>
-                  )}
-
-                  <Separator />
-                  <div className="flex justify-between text-lg font-semibold">
-                    <span>Total:</span>
-                    <span className="text-primary">
-                      {formatCurrency(invoiceData.total)}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 
+          {/* Totals */}
+          <div className="flex justify-end mb-8">
+            <div className="w-full max-w-xs">
+              <table className="w-full">
+                <tbody>
+                  <tr>
+                    <td className="py-2 text-gray-500 print:text-gray-700">Subtotal:</td>
+                    <td className="py-2 text-right text-gray-800 print:text-gray-900">
+                      {formatCurrency(invoiceData.subtotal)}
+                    </td>
+                  </tr>
+                  {invoiceData.discountRate > 0 && (
+                    <tr>
+                      <td className="py-2 text-gray-500 print:text-gray-700">
+                        Discount ({invoiceData.discountRate}%):
+                      </td>
+                      <td className="py-2 text-right text-green-600 print:text-red-700">
+                        -{formatCurrency(invoiceData.discountAmount)}
+                      </td>
+                    </tr>
+                  )}
+                  {invoiceData.taxRate > 0 && (
+                    <tr>
+                      <td className="py-2 text-gray-500 print:text-gray-700">
+                        Tax ({invoiceData.taxRate}%):
+                      </td>
+                      <td className="py-2 text-right text-gray-800 print:text-gray-900">
+                        {formatCurrency(invoiceData.taxAmount)}
+                      </td>
+                    </tr>
+                  )}
+                  <tr className="border-t-2 border-gray-200 print:border-t-2 print:border-gray-800">
+                    <td className="pt-4 font-bold text-lg text-gray-800 print:text-gray-900">
+                      Total:
+                    </td>
+                    <td className="pt-4 text-right font-bold text-lg text-blue-600 print:text-gray-900">
+                      {formatCurrency(invoiceData.total)}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           {/* Notes */}
           {invoiceData.notes && (
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Notes</h3>
-              <div className="text-muted-foreground whitespace-pre-line bg-muted/30 p-4 rounded-lg">
+            <div className="mb-8">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3 print:text-gray-700">
+                Notes
+              </h3>
+              <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg print:bg-gray-100">
                 {invoiceData.notes}
               </div>
             </div>
@@ -204,43 +233,37 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
 
           {/* Banking Information */}
           {invoiceData.bankingInfo.bankName && (
-            <div className="mt-8 pt-6 border-t">
-              <h3 className="text-lg font-semibold mb-4">
+            <div className="border-t-2 border-gray-100 pt-6 print:border-t-2 print:border-gray-800">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-4 print:text-gray-700">
                 Banking Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="font-medium text-muted-foreground">
-                    Bank:
-                  </span>
-                  <p className="font-medium">
+                  <span className="font-medium text-gray-600 print:text-gray-800">Bank:</span>
+                  <p className="font-semibold text-gray-800 print:text-gray-900">
                     {invoiceData.bankingInfo.bankName}
                   </p>
                 </div>
                 <div>
-                  <span className="font-medium text-muted-foreground">
+                  <span className="font-medium text-gray-600 print:text-gray-800">
                     Account Number:
                   </span>
-                  <p className="font-medium">
+                  <p className="font-semibold text-gray-800 print:text-gray-900">
                     {invoiceData.bankingInfo.accountNumber}
                   </p>
                 </div>
                 {invoiceData.bankingInfo.swiftCode && (
                   <div>
-                    <span className="font-medium text-muted-foreground">
-                      SWIFT Code:
-                    </span>
-                    <p className="font-medium">
+                    <span className="font-medium text-gray-600 print:text-gray-800">SWIFT Code:</span>
+                    <p className="font-semibold text-gray-800 print:text-gray-900">
                       {invoiceData.bankingInfo.swiftCode}
                     </p>
                   </div>
                 )}
                 {invoiceData.bankingInfo.iban && (
                   <div>
-                    <span className="font-medium text-muted-foreground">
-                      IBAN:
-                    </span>
-                    <p className="font-medium">
+                    <span className="font-medium text-gray-600 print:text-gray-800">IBAN:</span>
+                    <p className="font-semibold text-gray-800 print:text-gray-900">
                       {invoiceData.bankingInfo.iban}
                     </p>
                   </div>
@@ -250,8 +273,8 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
           )}
 
           {/* Footer */}
-          <div className="text-center pt-8 border-t">
-            <p className="text-sm text-muted-foreground">
+          <div className="text-center pt-8 mt-8 border-t-2 border-gray-100 print:border-t-2 print:border-gray-800">
+            <p className="text-sm text-gray-500 print:text-gray-700">
               Thank you for your business!
             </p>
           </div>
