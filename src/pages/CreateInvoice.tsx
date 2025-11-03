@@ -37,6 +37,10 @@ const CreateInvoice = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>(InvoiceTemplate.MODERN);
   const invoicePreviewRef = useRef<HTMLDivElement>(null);
+  // This ref will hold the DOM element of the InvoicePreview component
+  // which is rendered in the hidden div. This is used to ensure we capture
+  // the correct DOM after a template change.
+  const capturedPreviewRef = useRef<HTMLDivElement | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
   const [showPaywall, setShowPaywall] = useState(false);
@@ -100,35 +104,13 @@ const CreateInvoice = () => {
   }, []);
 
   useEffect(() => {
-    if (profile && !profileLoading) {
-      setInvoiceData((prevData) => {
-        const invoiceNumber = prevData.invoiceNumber || generateInvoiceNumber(profile.invoice_prefix);
-        const currency = profile.default_currency || "USD";
-        const taxRate = profile.default_tax_rate || 0;
-        return {
-          ...prevData,
-          invoiceNumber,
-          currency,
-          taxRate,
-          businessInfo: {
-            ...prevData.businessInfo,
-            name: profile.business_name || prevData.businessInfo.name,
-            email: profile.email || prevData.businessInfo.email,
-            phone: profile.phone || prevData.businessInfo.phone,
-            address: profile.address || prevData.businessInfo.address,
-            logo: profile.logo_url || prevData.businessInfo.logo,
-          },
-          bankingInfo: {
-            ...prevData.bankingInfo,
-            bankName: profile.bank_name || prevData.bankingInfo.bankName,
-            accountNumber: profile.account_number || prevData.bankingInfo.accountNumber,
-            swiftCode: profile.swift_code || prevData.bankingInfo.swiftCode,
-            iban: profile.iban || prevData.bankingInfo.iban,
-          },
-        };
-      });
+    // When selectedTemplate changes, update capturedPreviewRef to point to the new DOM element.
+    // This ensures that when generatePDF or handlePrintInvoice are called, they use the
+    // most up-to-date preview content.
+    if (invoicePreviewRef.current) {
+      capturedPreviewRef.current = invoicePreviewRef.current;
     }
-  }, [profile, profileLoading, generateInvoiceNumber]);
+  }, [selectedTemplate]); // Re-run this effect whenever selectedTemplate changes
 
   const handleSelectTemplate = (template: TemplateInfo) => {
     setSelectedTemplate(template.id);
@@ -153,13 +135,14 @@ const CreateInvoice = () => {
       setShowPaywall(true);
       return;
     }
-    if (!invoicePreviewRef.current || !invoiceData.businessInfo.name || !invoiceData.clientInfo.name) {
+    // Use capturedPreviewRef.current instead of invoicePreviewRef.current
+    if (!capturedPreviewRef.current || !invoiceData.businessInfo.name || !invoiceData.clientInfo.name) {
       toast({ title: "Error", description: "Invoice data incomplete.", variant: "destructive" });
       return;
     }
     setIsGenerating(true);
     try {
-      await generatePDF(invoicePreviewRef.current, invoiceData);
+      await generatePDF(capturedPreviewRef.current, invoiceData); // Use the captured ref
       toast({ title: "Success!", description: "Invoice PDF downloaded." });
     } catch (error) {
       console.error(error);
@@ -232,6 +215,82 @@ const CreateInvoice = () => {
   
   const SelectedTemplateComponent = availableTemplates.find(t => t.id === selectedTemplate)?.component || ModernTemplate;
 
+  const handlePrintInvoice = () => {
+    // Use capturedPreviewRef.current instead of invoicePreviewRef.current
+    const invoiceContent = capturedPreviewRef.current;
+    if (!invoiceContent) {
+      toast({ title: "Error", description: "Invoice preview not found.", variant: "destructive" });
+      return;
+    }
+
+    // Create a temporary iframe
+    const iframe = document.createElement('iframe');
+    iframe.style.height = '0';
+    iframe.style.width = '0';
+    iframe.style.position = 'absolute';
+    iframe.style.visibility = 'hidden';
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      toast({ title: "Error", description: "Could not access iframe document.", variant: "destructive" });
+      document.body.removeChild(iframe);
+      return;
+    }
+
+    // Write the basic HTML structure
+    iframeDoc.write(`
+      <html>
+        <head>
+          <title>Print Invoice</title>
+          <style>
+            /* Basic print styles */
+            @media print {
+              body { margin: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          ${invoiceContent.innerHTML}
+        </body>
+      </html>
+    `);
+    iframeDoc.close();
+
+    // Wait for the iframe to load its content before trying to copy styles
+    iframe.onload = () => {
+      const iframeHead = iframe.contentWindow?.document.head;
+      if (iframeHead) {
+        // Copy all stylesheets from the parent document to the iframe
+        Array.from(document.styleSheets).forEach(styleSheet => {
+          if (styleSheet.cssRules) {
+            const styleEl = document.createElement('style');
+            styleEl.textContent = Array.from(styleSheet.cssRules).map(rule => rule.cssText).join('\n');
+            iframeHead.appendChild(styleEl);
+          } else if (styleSheet.href) { // For external stylesheets, try to link them
+            const linkEl = document.createElement('link');
+            linkEl.rel = 'stylesheet';
+            linkEl.href = styleSheet.href;
+            iframeHead.appendChild(linkEl);
+          }
+        });
+      }
+
+      const iframeWindow = iframe.contentWindow;
+      if (iframeWindow) {
+        iframeWindow.focus();
+        iframeWindow.print();
+        // Clean up the iframe after printing
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000); // Give some time for the print dialog to appear
+      } else {
+        toast({ title: "Error", description: "Could not access iframe window.", variant: "destructive" });
+        document.body.removeChild(iframe);
+      }
+    };
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -253,7 +312,7 @@ const CreateInvoice = () => {
             </>}
           </Button>
 
-          <Button onClick={() => window.print()} variant="outline" className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700">
+          <Button onClick={handlePrintInvoice} variant="outline" className="hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700">
             <Printer className="h-4 w-4 mr-2"/>Print Invoice
           </Button>
         </div>

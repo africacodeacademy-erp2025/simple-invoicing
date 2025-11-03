@@ -31,7 +31,7 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
       <Card className="w-[800px] shadow-lg font-sans" ref={ref}>
         <CardContent className="p-10">
           {/* Header */}
-          <div className="flex justify-between items-start pb-6 mb-8 border-b-2 border-gray-100">
+          <div className="flex justify-between items-start pb-6 mb-8 border-b-2 border-gray-100 print:border-b-2 print:border-gray-800">
             {/* Left Section: Logo and Invoice Title */}
             <div className="flex items-center gap-6">
               {invoiceData.businessInfo.logo && (
@@ -48,8 +48,8 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
                 </div>
               )}
               <div>
-                <h1 className="text-4xl font-bold text-gray-800">INVOICE</h1>
-                <p className="text-gray-500 mt-1">
+                <h1 className="text-4xl font-bold text-gray-800 print:text-gray-900">INVOICE</h1>
+                <p className="text-gray-500 mt-1 print:text-gray-700">
                   #{invoiceData.invoiceNumber}
                 </p>
               </div>
@@ -57,15 +57,15 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
 
             {/* Right Section: Business Info */}
             <div className="text-right">
-              <h2 className="text-2xl font-semibold text-gray-800">
+              <h2 className="text-2xl font-semibold text-gray-800 print:text-gray-900">
                 {invoiceData.businessInfo.name}
               </h2>
               {invoiceData.businessInfo.address && (
-                <div className="text-sm text-gray-500 whitespace-pre-line mt-1">
+                <div className="text-sm text-gray-500 whitespace-pre-line mt-1 print:text-gray-700">
                   {invoiceData.businessInfo.address}
                 </div>
               )}
-              <div className="text-sm text-gray-500 mt-1">
+              <div className="text-sm text-gray-500 mt-1 print:text-gray-700">
                 {invoiceData.businessInfo.email && (
                   <span>{invoiceData.businessInfo.email}</span>
                 )}
@@ -82,10 +82,10 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
           <div className="grid grid-cols-2 gap-8 mb-8">
             {/* Bill To */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3 print:text-gray-700">
                 Bill To
               </h3>
-              <div className="text-gray-800">
+              <div className="text-gray-800 print:text-gray-900">
                 <p className="font-bold text-lg">
                   {invoiceData.clientInfo.name}
                 </p>
@@ -105,26 +105,26 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
               <table className="w-full">
                 <tbody>
                   <tr>
-                    <td className="text-sm font-semibold text-gray-500 uppercase pr-4">
+                    <td className="text-sm font-semibold text-gray-500 uppercase pr-4 print:text-gray-700">
                       Issue Date:
                     </td>
-                    <td className="text-gray-800">
+                    <td className="text-gray-800 print:text-gray-900">
                       {formatDate(invoiceData.date)}
                     </td>
                   </tr>
                   <tr>
-                    <td className="text-sm font-semibold text-gray-500 uppercase pr-4">
+                    <td className="text-sm font-semibold text-gray-500 uppercase pr-4 print:text-gray-700">
                       Due Date:
                     </td>
-                    <td className="text-gray-800">
+                    <td className="text-gray-800 print:text-gray-900">
                       {formatDate(invoiceData.dueDate)}
                     </td>
                   </tr>
                   <tr>
-                    <td className="text-sm font-semibold text-gray-500 uppercase pr-4">
+                    <td className="text-sm font-semibold text-gray-500 uppercase pr-4 print:text-gray-700">
                       Currency:
                     </td>
-                    <td className="text-gray-800">{invoiceData.currency}</td>
+                    <td className="text-gray-800 print:text-gray-900">{invoiceData.currency}</td>
                   </tr>
                 </tbody>
               </table>
@@ -135,37 +135,37 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
           {invoiceData.lineItems.length > 0 && (
             <div className="mb-8">
               <table className="w-full text-left">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-gray-50 border-b border-gray-200 print:bg-gray-200 print:border-b-2 print:border-gray-800">
                   <tr>
-                    <th className="p-4 font-semibold text-sm text-gray-600 uppercase">
+                    <th className="p-4 font-semibold text-sm text-gray-600 uppercase print:text-gray-800">
                       Description
                     </th>
-                    <th className="p-4 font-semibold text-sm text-gray-600 uppercase text-right w-24">
+                    <th className="p-4 font-semibold text-sm text-gray-600 uppercase text-right w-24 print:text-gray-800">
                       Qty
                     </th>
-                    <th className="p-4 font-semibold text-sm text-gray-600 uppercase text-right w-32">
+                    <th className="p-4 font-semibold text-sm text-gray-600 uppercase text-right w-32 print:text-gray-800">
                       Rate
                     </th>
-                    <th className="p-4 font-semibold text-sm text-gray-600 uppercase text-right w-40">
+                    <th className="p-4 font-semibold text-sm text-gray-600 uppercase text-right w-40 print:text-gray-800">
                       Amount
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {invoiceData.lineItems.map((item) => (
-                    <tr key={item.id} className="border-b border-gray-100">
+                    <tr key={item.id} className="border-b border-gray-100 print:border-b print:border-gray-300">
                       <td className="p-4">
-                        <div className="whitespace-pre-line text-gray-800">
+                        <div className="whitespace-pre-line text-gray-800 print:text-gray-900">
                           {item.description}
                         </div>
                       </td>
-                      <td className="p-4 text-right text-gray-600">
+                      <td className="p-4 text-right text-gray-600 print:text-gray-800">
                         {item.quantity}
                       </td>
-                      <td className="p-4 text-right text-gray-600">
+                      <td className="p-4 text-right text-gray-600 print:text-gray-800">
                         {formatCurrency(item.rate)}
                       </td>
-                      <td className="p-4 text-right font-semibold text-gray-800">
+                      <td className="p-4 text-right font-semibold text-gray-800 print:text-gray-900">
                         {formatCurrency(item.amount)}
                       </td>
                     </tr>
@@ -181,36 +181,36 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
               <table className="w-full">
                 <tbody>
                   <tr>
-                    <td className="py-2 text-gray-500">Subtotal:</td>
-                    <td className="py-2 text-right text-gray-800">
+                    <td className="py-2 text-gray-500 print:text-gray-700">Subtotal:</td>
+                    <td className="py-2 text-right text-gray-800 print:text-gray-900">
                       {formatCurrency(invoiceData.subtotal)}
                     </td>
                   </tr>
                   {invoiceData.discountRate > 0 && (
                     <tr>
-                      <td className="py-2 text-gray-500">
+                      <td className="py-2 text-gray-500 print:text-gray-700">
                         Discount ({invoiceData.discountRate}%):
                       </td>
-                      <td className="py-2 text-right text-green-600">
+                      <td className="py-2 text-right text-green-600 print:text-red-700">
                         -{formatCurrency(invoiceData.discountAmount)}
                       </td>
                     </tr>
                   )}
                   {invoiceData.taxRate > 0 && (
                     <tr>
-                      <td className="py-2 text-gray-500">
+                      <td className="py-2 text-gray-500 print:text-gray-700">
                         Tax ({invoiceData.taxRate}%):
                       </td>
-                      <td className="py-2 text-right text-gray-800">
+                      <td className="py-2 text-right text-gray-800 print:text-gray-900">
                         {formatCurrency(invoiceData.taxAmount)}
                       </td>
                     </tr>
                   )}
-                  <tr className="border-t-2 border-gray-200">
-                    <td className="pt-4 font-bold text-lg text-gray-800">
+                  <tr className="border-t-2 border-gray-200 print:border-t-2 print:border-gray-800">
+                    <td className="pt-4 font-bold text-lg text-gray-800 print:text-gray-900">
                       Total:
                     </td>
-                    <td className="pt-4 text-right font-bold text-lg text-blue-600">
+                    <td className="pt-4 text-right font-bold text-lg text-blue-600 print:text-gray-900">
                       {formatCurrency(invoiceData.total)}
                     </td>
                   </tr>
@@ -222,10 +222,10 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
           {/* Notes */}
           {invoiceData.notes && (
             <div className="mb-8">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3 print:text-gray-700">
                 Notes
               </h3>
-              <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg">
+              <div className="text-sm text-gray-600 bg-gray-50 p-4 rounded-lg print:bg-gray-100">
                 {invoiceData.notes}
               </div>
             </div>
@@ -233,37 +233,37 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
 
           {/* Banking Information */}
           {invoiceData.bankingInfo.bankName && (
-            <div className="border-t-2 border-gray-100 pt-6">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-4">
+            <div className="border-t-2 border-gray-100 pt-6 print:border-t-2 print:border-gray-800">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-4 print:text-gray-700">
                 Banking Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="font-medium text-gray-600">Bank:</span>
-                  <p className="font-semibold text-gray-800">
+                  <span className="font-medium text-gray-600 print:text-gray-800">Bank:</span>
+                  <p className="font-semibold text-gray-800 print:text-gray-900">
                     {invoiceData.bankingInfo.bankName}
                   </p>
                 </div>
                 <div>
-                  <span className="font-medium text-gray-600">
+                  <span className="font-medium text-gray-600 print:text-gray-800">
                     Account Number:
                   </span>
-                  <p className="font-semibold text-gray-800">
+                  <p className="font-semibold text-gray-800 print:text-gray-900">
                     {invoiceData.bankingInfo.accountNumber}
                   </p>
                 </div>
                 {invoiceData.bankingInfo.swiftCode && (
                   <div>
-                    <span className="font-medium text-gray-600">SWIFT Code:</span>
-                    <p className="font-semibold text-gray-800">
+                    <span className="font-medium text-gray-600 print:text-gray-800">SWIFT Code:</span>
+                    <p className="font-semibold text-gray-800 print:text-gray-900">
                       {invoiceData.bankingInfo.swiftCode}
                     </p>
                   </div>
                 )}
                 {invoiceData.bankingInfo.iban && (
                   <div>
-                    <span className="font-medium text-gray-600">IBAN:</span>
-                    <p className="font-semibold text-gray-800">
+                    <span className="font-medium text-gray-600 print:text-gray-800">IBAN:</span>
+                    <p className="font-semibold text-gray-800 print:text-gray-900">
                       {invoiceData.bankingInfo.iban}
                     </p>
                   </div>
@@ -273,8 +273,8 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
           )}
 
           {/* Footer */}
-          <div className="text-center pt-8 mt-8 border-t-2 border-gray-100">
-            <p className="text-sm text-gray-500">
+          <div className="text-center pt-8 mt-8 border-t-2 border-gray-100 print:border-t-2 print:border-gray-800">
+            <p className="text-sm text-gray-500 print:text-gray-700">
               Thank you for your business!
             </p>
           </div>

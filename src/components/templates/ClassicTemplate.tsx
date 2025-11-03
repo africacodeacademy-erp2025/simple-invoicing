@@ -28,7 +28,7 @@ export const ClassicTemplate = forwardRef<HTMLDivElement, ClassicTemplateProps>(
     return (
       <div
         ref={ref}
-        className="w-[800px] bg-white p-10 shadow-lg"
+        className="w-[800px] bg-white p-10 shadow-lg print:shadow-none print:p-0 print:m-0"
         style={{ fontFamily: "'Times New Roman', Times, serif" }}
       >
         {/* Header */}
