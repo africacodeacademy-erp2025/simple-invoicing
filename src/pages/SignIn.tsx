@@ -15,7 +15,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ValidationService } from "@/services/validation.service";
-import ThemeToggle from "@/components/ui/ThemeToggle";
+import Navbar from "@/components/layouts/Navbar";
+import logo from "/Simple invoicing logo.png";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -73,27 +74,7 @@ const SignIn = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Navbar */}
-      <nav className="border-b border-border/50 bg-background/95 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary-gradient rounded-lg flex items-center justify-center">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-lg font-semibold">Simple Invoicing</span>
-            </Link>
-            <div className="flex items-center gap-3">
-              <ThemeToggle />
-              <Link to="/signup">
-                <Button variant="outline" size="sm">
-                  Sign Up
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
@@ -101,9 +82,11 @@ const SignIn = () => {
         <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23000000%22%20fill-opacity%3D%220.05%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50" />
           <div className="relative z-10 flex flex-col justify-center items-center text-center p-12">
-            <div className="w-20 h-20 bg-primary-gradient rounded-2xl flex items-center justify-center mb-8 shadow-lg">
-              <FileText className="h-10 w-10 text-white" />
-            </div>
+            <img
+              src={logo}
+              alt="Simple Invoicing Logo"
+              className="w-40 mb-8"
+            />
             <h1 className="text-4xl font-bold text-foreground mb-4">
               Welcome back to
               <span className="bg-primary-gradient bg-clip-text text-transparent block">

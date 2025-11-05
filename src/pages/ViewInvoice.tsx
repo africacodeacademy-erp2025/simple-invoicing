@@ -433,10 +433,7 @@ const ViewInvoice = () => {
         <div className="flex items-center gap-3">
           <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
             <DialogTrigger asChild>
-              <Button
-                
-                className="flex items-center gap-2"
-              >
+              <Button className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 Send Invoice
               </Button>
