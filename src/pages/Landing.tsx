@@ -2,7 +2,6 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  FileText,
   Users,
   Zap,
   Shield,
@@ -11,17 +10,18 @@ import {
   ArrowRight,
 } from "lucide-react";
 import PricingPlans from "@/components/PricingPlans";
-import ThemeToggle from "@/components/ui/ThemeToggle";
+import Navbar from "@/components/layouts/Navbar";
+import logo from "/Simple invoicing logo.png";
 
 const Landing = () => {
   const features = [
     {
-      icon: <FileText className="h-8 w-8 text-primary" />,
+      icon: <img src={logo} alt="Professional Invoices" className="h-8 w-8 object-contain" />,
       title: "Professional Invoices",
       description:
         "Create stunning, professional invoices in minutes with customizable templates.",
       image:
-        "https://images.pexels.com/photos/7172633/pexels-photo-7172633.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "https://i.pinimg.com/736x/1c/27/97/1c27978b1672fa20c87c2ba401b1e8ae.jpg",
     },
     {
       icon: <Users className="h-8 w-8 text-primary" />,
@@ -29,7 +29,7 @@ const Landing = () => {
       description:
         "Keep track of your clients and their information in one organized place.",
       image:
-        "https://images.pexels.com/photos/3184423/pexels-photo-3184423.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "https://i.pinimg.com/1200x/b9/d0/eb/b9d0eb41ff9e4a77407e7b25d1a68ffd.jpg",
     },
     {
       icon: <Zap className="h-8 w-8 text-primary" />,
@@ -37,7 +37,7 @@ const Landing = () => {
       description:
         "Generate and send invoices instantly with a streamlined workflow.",
       image:
-        "https://images.pexels.com/photos/5926382/pexels-photo-5926382.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "https://i.pinimg.com/736x/37/64/0b/37640b8094add24848c990de27e2b937.jpg",
     },
     {
       icon: <Shield className="h-8 w-8 text-primary" />,
@@ -45,7 +45,7 @@ const Landing = () => {
       description:
         "Your data is protected with enterprise-grade security and reliability.",
       image:
-        "https://images.pexels.com/photos/5380649/pexels-photo-5380649.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "https://i.pinimg.com/736x/a9/bb/d1/a9bbd1a52ffac8802245292f6d73810c.jpg",
     },
     {
       icon: <BarChart3 className="h-8 w-8 text-primary" />,
@@ -53,7 +53,7 @@ const Landing = () => {
       description:
         "Track your business performance with detailed analytics and insights.",
       image:
-        "https://images.pexels.com/photos/3760067/pexels-photo-3760067.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "https://i.pinimg.com/736x/32/6d/a6/326da6b951c0a1ccd1fd2ad605dd8e6a.jpg",
     },
     {
       icon: <Globe className="h-8 w-8 text-primary" />,
@@ -61,43 +61,20 @@ const Landing = () => {
       description:
         "Support for multiple currencies and international business needs.",
       image:
-        "https://images.pexels.com/photos/4386466/pexels-photo-4386466.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "https://i.pinimg.com/1200x/79/67/23/7967237e74aecbd3128cebdfa835ab75.jpg",
     },
   ];
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
-      {/* Navigation */}
-      <nav className="border-b border-border/50 bg-background/95 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary-gradient rounded-lg flex items-center justify-center">
-                <FileText className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold">Simple Invoicing</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <ThemeToggle />
-              <Link to="/signin">
-                <Button variant="ghost">Sign In</Button>
-              </Link>
-              <Link to="/signup">
-                <Button className="bg-primary-gradient hover:opacity-90">
-                  Get Started
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Hero Section */}
       <section
         className="relative py-24 lg:py-40 bg-cover bg-center text-center overflow-hidden"
         style={{
           backgroundImage:
-            "url('https://images.pexels.com/photos/3184418/pexels-photo-3184418.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')",
+            "url('https://i.pinimg.com/1200x/69/37/8d/69378df03a6c057de690eb5a55350366.jpg')",
         }}
       >
         {/* Darker overlay for readability */}

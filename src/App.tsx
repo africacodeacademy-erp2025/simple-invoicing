@@ -18,7 +18,6 @@ import EditInvoice from "./pages/EditInvoice";
 import ViewInvoice from "./pages/ViewInvoice";
 import Invoices from "./pages/Invoices";
 import Clients from "./pages/Clients";
-import Templates from "./pages/Templates";
 import Profile from "./pages/Profile";
 import Billing from "./pages/Billing";
 import Index from "./pages/Index";
@@ -63,14 +62,13 @@ const App = () => (
               <Route path="view-invoice/:id" element={<ViewInvoice />} />
               <Route path="invoices" element={<Invoices />} />
               <Route path="clients" element={<Clients />} />
-              <Route path="templates" element={<Templates />} />
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} /> {/* Add the new Settings route */}
               <Route path="billing" element={<Billing />} />
             </Route>
 
             {/* Legacy Routes - Redirect to new /app/* */}
-            {["/dashboard", "/create-invoice", "/invoices", "/clients", "/templates", "/profile"].map((path) => (
+            {["/dashboard", "/create-invoice", "/invoices", "/clients", "/profile"].map((path) => (
               <Route
                 key={path}
                 path={path}
