@@ -3,6 +3,9 @@ FROM node:18-alpine AS build
 
 WORKDIR /app
 
+# Explicitly install Node.js and npm
+RUN apk add --no-cache nodejs npm
+
 COPY package*.json ./
 RUN npm install
 

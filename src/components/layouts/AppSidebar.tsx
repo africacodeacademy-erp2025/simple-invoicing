@@ -2,6 +2,7 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { LogOut, Settings, LayoutDashboard, FileText, Users, Palette, LifeBuoy, User, DollarSign } from "lucide-react";
+import logo from "/Simple invoicing logo.png";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import Billing from "@/pages/Billing";
@@ -30,11 +31,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen }) => {
       label: "Clients",
     },
     {
-      path: "/app/templates",
-      icon: <Palette className="h-4 w-4" />,
-      label: "Templates",
-    },
-    {
       path: "/app/billing",
       icon: < DollarSign className="h-4 w-4" />,
       label: "Billing",
@@ -61,10 +57,13 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen }) => {
         {/* Header */}
         <div className="h-16 border-b flex items-center px-6 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary-gradient rounded-lg flex items-center justify-center">
-              <FileText className="h-5 w-5 text-white" />
+            <div className="w-28 h-20 flex items-center justify-center">
+              <img
+                src={logo}
+                alt="Simple Invoicing Logo"
+                className="object-contain scale-110"
+              />
             </div>
-            <span className="text-xl font-bold text-foreground">Simple Invoicing</span>
           </div>
         </div>
 
