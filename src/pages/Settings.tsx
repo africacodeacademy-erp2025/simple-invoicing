@@ -26,6 +26,7 @@ import { Loader2 } from "lucide-react";
 import { AuthController } from "@/controllers/auth.controller";
 import { ProfileService } from "@/services/profile.service"; // Import ProfileService
 import { useProfile } from "@/hooks/useProfile"; // Import useProfile
+import ApiKeyManager from "@/components/ApiKeyManager";
 
 const Settings: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -251,6 +252,9 @@ const Settings: React.FC = () => {
           </Dialog>
         </CardContent>
       </Card>
+
+      {/* API Key Management */}
+      <ApiKeyManager />
     </div>
   );
 };
