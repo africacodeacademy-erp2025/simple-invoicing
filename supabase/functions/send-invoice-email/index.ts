@@ -1,15 +1,7 @@
 
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { encode } from "https://deno.land/std@0.177.0/encoding/base64.ts";
-
-// CORS headers
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-requested-with",
-  "Access-Control-Max-Age": "86400",
-};
+import { serve } from "std/http/server.ts";
+import { createClient } from "@supabase/supabase-js";
+import { corsHeaders } from "../_shared/cors.ts";
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -53,8 +45,6 @@ serve(async (req) => {
     // --- PARSE REQUEST BODY ---
     const { invoiceId, recipientEmail, recipientName, customMessage, ccOwner, autoGenerateMessage, pdfUrl } = await req.json();
     
-    console.log("Received pdfUrl:", pdfUrl); // Log the received URL
-
     if (!invoiceId || !recipientEmail || !pdfUrl) {
       return new Response(
         JSON.stringify({ success: false, message: "Missing required fields: invoiceId, recipientEmail, and pdfUrl are required." }),
@@ -85,33 +75,7 @@ serve(async (req) => {
 
     // --- EMAIL CONTENT ---
     const finalMessage = autoGenerateMessage ? generateAutoMessage(invoice, recipientName) : customMessage;
-    const htmlContent = generateInvoiceEmailHTML(invoice, finalMessage);
-
-    // --- HANDLE PDF ATTACHMENT ---
-    let pdfAttachment = null;
-    if (pdfUrl) {
-      try {
-        const response = await fetch(pdfUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch PDF: ${response.statusText}`);
-        }
-  const pdfArrayBuffer = await response.arrayBuffer();
-  // Convert ArrayBuffer to Uint8Array before base64 encoding to ensure binary data is encoded correctly
-  const pdfUint8 = new Uint8Array(pdfArrayBuffer);
-  // Use Deno's standard library for robust Base64 encoding
-  const pdfBase64 = encode(pdfUint8);
-  console.log(`PDF attachment size (bytes): ${pdfUint8.length}`);
-  console.log(`PDF base64 prefix: ${pdfBase64.slice(0, 64)}`);
-        pdfAttachment = pdfBase64;
-      } catch (pdfError) {
-        console.error("Error fetching or encoding PDF:", pdfError);
-        // Return an error instead of sending the email without the attachment
-        return new Response(
-          JSON.stringify({ success: false, message: "Server failed to process PDF attachment from storage.", error: pdfError.message }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
+    const htmlContent = generateInvoiceEmailHTML(invoice, finalMessage, pdfUrl);
 
     // --- SENDGRID PAYLOAD ---
     const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
@@ -130,21 +94,11 @@ serve(async (req) => {
         {
           to: [{ email: recipientEmail, name: recipientName }],
           ...(ccOwner && profile?.email && { cc: [{ email: profile.email }] }),
-          subject: `Invoice #${invoice.invoice_number} from ${invoice.business_name} (with PDF)`
+          subject: `Invoice #${invoice.invoice_number} from ${invoice.business_name}`
         }
       ],
       from: { email: sendgridFromEmail, name: invoice.business_name || "Easy Charge Pro" },
       content: [{ type: "text/html", value: htmlContent }],
-      ...(pdfAttachment && {
-        attachments: [
-          {
-            content: pdfAttachment,
-            filename: `invoice-${invoice.invoice_number}.pdf`,
-            type: "application/pdf",
-            disposition: "attachment"
-          }
-        ]
-      })
     };
 
     // --- SEND EMAIL VIA SENDGRID ---
@@ -182,7 +136,7 @@ serve(async (req) => {
 
 // --- HELPER FUNCTIONS ---
 
-function generateInvoiceEmailHTML(invoice: any, message: string): string {
+function generateInvoiceEmailHTML(invoice: any, message: string, pdfUrl: string): string {
   const currencySymbol = getCurrencySymbol(invoice.currency);
   const formatCurrency = (amount: number) => `${currencySymbol}${amount.toFixed(2)}`;
   
@@ -206,6 +160,7 @@ function generateInvoiceEmailHTML(invoice: any, message: string): string {
         .line-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e2e8f0; }
         .final-total { font-weight: bold; font-size: 1.2em; color: #4f46e5; border-top: 2px solid #e2e8f0; padding-top: 10px; margin-top: 10px; }
         .footer { margin-top: 24px; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; }
+        .button { background-color: #4f46e5; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; margin-top: 16px; }
       </style>
     </head>
     <body>
@@ -215,6 +170,7 @@ function generateInvoiceEmailHTML(invoice: any, message: string): string {
         </div>
         <div class="content">
           <div class="message-box">${message.replace(/\n/g, '<br>')}</div>
+          <a href="${pdfUrl}" class="button">Download Invoice PDF</a>
           <div class="invoice-details">
             <div class="detail-row"><span>Invoice Number:</span><strong>#${invoice.invoice_number}</strong></div>
             <div class="detail-row"><span>Issue Date:</span><strong>${new Date(invoice.issue_date).toLocaleDateString()}</strong></div>
@@ -267,7 +223,7 @@ Here is the invoice #${invoice.invoice_number} from ${invoice.business_name} for
 
 The payment is due by ${dueDate}.
 
-You can view the invoice attached to this email.
+You can view the invoice by clicking the button in this email.
 
 Thank you for your business!
 

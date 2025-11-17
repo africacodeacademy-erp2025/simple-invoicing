@@ -1,6 +1,7 @@
 import { serve } from "std/http/server.ts";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
   apiVersion: "2025-09-30.clover",
@@ -11,16 +12,9 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "content-type",
-};
-
 serve(async (req) => {
-  console.log('Stripe Webhook received request. Headers:', JSON.stringify(Object.fromEntries(req.headers.entries())));
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders, status: 204 });
   }
 
   if (req.method !== "POST") {

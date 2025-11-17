@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+import { serve } from 'std/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 
 export type PlanTier = 'free' | 'starter' | 'pro' | 'business' | 'enterprise';
@@ -99,7 +99,7 @@ export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders, status: 204 });
   }
 
   // Return all plan limits

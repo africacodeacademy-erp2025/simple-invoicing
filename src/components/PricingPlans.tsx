@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,47 +62,82 @@ export default function PricingPlans() {
     await BillingService.startCheckout(priceId);
   };
 
+  const handleManage = async () => {
+    await BillingService.manageSubscription();
+  }
+
   return (
     <div className="flex justify-center py-12 px-4 bg-background dark:bg-gray-900">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
-        {plans.map((plan) => (
-          <Card
-            key={plan.key}
-            className={`transition-transform duration-300 hover:scale-105 rounded-xl border border-gray-200 dark:border-gray-700
-                        bg-white dark:bg-gray-800 shadow-lg dark:shadow-gray-900`}
-          >
-            <CardHeader className="text-center py-4">
-              <CardTitle className="text-lg md:text-xl font-semibold flex items-center justify-center gap-2">
-                {plan.name}
-                {activePlan.startsWith(plan.key) && (
-                  <span className="text-xs px-2 py-1 bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200 rounded-full">
-                    Current
-                  </span>
-                )}
-              </CardTitle>
-              <div className="text-2xl md:text-3xl font-bold mt-2">{plan.priceMonthly}</div>
-              <p className="text-sm md:text-base text-muted-foreground mt-1">{plan.blurb}</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="text-sm md:text-base list-disc pl-5 space-y-1 text-foreground dark:text-gray-200">
-                {plan.features.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
-              <Button
-                className={`w-full py-2 text-sm md:text-base rounded-md transition-all duration-200 ${
-                  plan.key === "starter"
-                    ? "bg-gray-100 text-gray-600 border border-gray-300 cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
-                    : "bg-primary-gradient hover:opacity-90 text-white"
-                }`}
-                onClick={() => handleSelect(plan.key, plan.priceEnvVar)}
-                disabled={plan.key === "starter"}
-              >
-                {plan.key === "starter" ? "Current" : "Choose plan"}
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+        {plans.map((plan) => {
+          const isCurrentPlan = activePlan.startsWith(plan.key);
+          const isProPlan = plan.key === 'pro';
+
+          let buttonText: string;
+          let onButtonClick: () => void;
+          let isButtonDisabled: boolean;
+
+          if (isCurrentPlan) {
+            if (isProPlan) {
+              buttonText = 'Manage Subscription';
+              onButtonClick = handleManage;
+              isButtonDisabled = false;
+            } else { // Current plan is Starter
+              buttonText = 'Current Plan';
+              onButtonClick = () => {};
+              isButtonDisabled = true;
+            }
+          } else { // Not current plan
+            if (isProPlan) { // Pro is an upgrade
+              buttonText = 'Upgrade to Pro';
+              onButtonClick = () => handleSelect(plan.key, plan.priceEnvVar);
+              isButtonDisabled = false;
+            } else { // Starter is not current (so user is on Pro)
+              buttonText = 'Choose Plan'; 
+              onButtonClick = () => {};
+              isButtonDisabled = true;
+            }
+          }
+
+          const buttonClassName = isButtonDisabled
+            ? "bg-gray-100 text-gray-600 border border-gray-300 cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600"
+            : "bg-primary-gradient hover:opacity-90 text-white";
+
+          return (
+            <Card
+              key={plan.key}
+              className={`transition-transform duration-300 hover:scale-105 rounded-xl border border-gray-200 dark:border-gray-700
+                          bg-white dark:bg-gray-800 shadow-lg dark:shadow-gray-900`}
+            >
+              <CardHeader className="text-center py-4">
+                <CardTitle className="text-lg md:text-xl font-semibold flex items-center justify-center gap-2">
+                  {plan.name}
+                  {isCurrentPlan && (
+                    <span className="text-xs px-2 py-1 bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200 rounded-full">
+                      Current
+                    </span>
+                  )}
+                </CardTitle>
+                <div className="text-2xl md:text-3xl font-bold mt-2">{plan.priceMonthly}</div>
+                <p className="text-sm md:text-base text-muted-foreground mt-1">{plan.blurb}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="text-sm md:text-base list-disc pl-5 space-y-1 text-foreground dark:text-gray-200">
+                  {plan.features.map((f) => (
+                    <li key={f}>{f}</li>
+                  ))}
+                </ul>
+                <Button
+                  className={`w-full py-2 text-sm md:text-base rounded-md transition-all duration-200 ${buttonClassName}`}
+                  onClick={onButtonClick}
+                  disabled={isButtonDisabled}
+                >
+                  {buttonText}
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

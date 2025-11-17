@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Search,
   Eye,
   Edit,
@@ -34,132 +43,115 @@ import {
   Calendar,
   Loader2,
   MoreVertical,
+  CircleDollarSign,
+  FileWarning,
+  FileCheck2,
+  FileClock
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { InvoiceController } from "@/controllers/invoice.controller";
 import { SavedInvoice } from "@/services/invoice.service";
+import { format, parseISO, isPast } from 'date-fns';
 
-interface Invoice {
-  id: string;
-  invoice_number: string;
-  client_name: string;
-  issue_date: string;
-  due_date: string;
-  total: number;
-  currency: string;
-  is_recurring: boolean;
-  recurring_interval?: string;
-  template: string;
-  email_sent_date?: string;
-  created_at: string;
-}
+type InvoiceStatus = "Paid" | "Sent" | "Overdue" | "Draft";
+
+
+const getStatus = (invoice: SavedInvoice): InvoiceStatus => {
+  if (invoice.status === 'paid') return 'Paid';
+  if (isPast(parseISO(invoice.due_date)) && invoice.status !== 'paid') return 'Overdue';
+  if (invoice.status === 'sent') return 'Sent';
+  return 'Draft';
+};
+
 
 export default function Invoices() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [invoices, setInvoices] = useState<SavedInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  // Fetch invoices from database
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(8);
+
   useEffect(() => {
     const loadInvoices = async () => {
       if (!user?.id) return;
-
       setIsLoading(true);
       try {
         const response = await InvoiceController.getInvoices(user.id);
         if (response.success && response.data) {
-          setInvoices(response.data as Invoice[]);
+          setInvoices(response.data as SavedInvoice[]);
         } else {
-          toast({
-            title: "Error",
-            description: response.message,
-            variant: "destructive",
-          });
+          toast({ title: "Error", description: response.message, variant: "destructive" });
         }
       } catch (error) {
         console.error("Error loading invoices:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load invoices",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "Failed to load invoices", variant: "destructive" });
       } finally {
         setIsLoading(false);
       }
     };
-
     loadInvoices();
   }, [user?.id]);
 
-  const filteredInvoices = invoices.filter((invoice) => {
-    const matchesSearch =
-      invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.client_name.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredInvoices = useMemo(() => {
+    return invoices
+      .map(invoice => ({ ...invoice, calculatedStatus: getStatus(invoice) }))
+      .filter((invoice) => {
+        const matchesSearch =
+          invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          invoice.client_name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus =
+          statusFilter === "all" || invoice.calculatedStatus.toLowerCase() === statusFilter;
+        return matchesSearch && matchesStatus;
+      });
+  }, [invoices, searchTerm, statusFilter]);
 
-    // For now, we'll show all invoices since we don't have status tracking yet
-    const matchesStatus = statusFilter === "all";
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case "Paid":
-        return "default";
-      case "Sent":
-        return "secondary";
-      case "Overdue":
-        return "destructive";
-      case "Draft":
-        return "outline";
-      default:
-        return "outline";
-    }
-  };
+  const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+  const paginatedInvoices = filteredInvoices.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const handleDeleteInvoice = async (invoiceId: string) => {
     try {
       const response = await InvoiceController.deleteInvoice(invoiceId);
       if (response.success) {
         setInvoices((prev) => prev.filter((invoice) => invoice.id !== invoiceId));
-        toast({
-          title: "Invoice Deleted",
-          description: "Invoice has been deleted successfully.",
-        });
+        toast({ title: "Invoice Deleted", description: "Invoice has been deleted." });
       } else {
-        toast({
-          title: "Error",
-          description: response.message,
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: response.message, variant: "destructive" });
       }
     } catch (error) {
-      console.error("Error deleting invoice:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete invoice",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to delete invoice", variant: "destructive" });
     }
   };
+  
+  const StatusInfo = {
+    Paid: { icon: FileCheck2, color: 'text-green-500', bgColor: 'bg-green-500/10' },
+    Overdue: { icon: FileWarning, color: 'text-red-500', bgColor: 'bg-red-500/10' },
+    Sent: { icon: FileClock, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+    Draft: { icon: Edit, color: 'text-gray-500', bgColor: 'bg-gray-500/10' },
+  };
+
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Invoices</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Invoices</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             Manage and track all your invoices.
           </p>
         </div>
-        <Link to="/app/create-invoice">
-          <Button className="bg-primary hover:opacity-90">
+        <Link to="/app/create-invoice" className="w-full sm:w-auto">
+          <Button className="bg-primary hover:opacity-90 w-full">
             <Plus className="h-4 w-4 mr-2" />
             Create Invoice
           </Button>
@@ -167,187 +159,164 @@ export default function Invoices() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="shadow-soft">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{invoices.length}</div>
-            <p className="text-sm text-muted-foreground">Total Invoices</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-soft">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-blue-600">
-              {invoices.filter((invoice) => invoice.is_recurring).length}
-            </div>
-            <p className="text-sm text-muted-foreground">Recurring</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-soft">
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-purple-600">
-              {invoices.filter((invoice) => !invoice.is_recurring).length}
-            </div>
-            <p className="text-sm text-muted-foreground">One-time</p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold">{invoices.length}</div>
+              <p className="text-sm text-muted-foreground">Total Invoices</p>
+            </CardContent>
+          </Card>
+          {Object.entries(StatusInfo).map(([status, {color, icon: Icon}]) => (
+             <Card key={status}>
+                <CardContent className="p-4">
+                  <div className={`text-2xl font-bold ${color}`}>{filteredInvoices.filter(inv => inv.calculatedStatus === status).length}</div>
+                  <p className="text-sm text-muted-foreground">{status}</p>
+                </CardContent>
+            </Card>
+          ))}
       </div>
 
       {/* Search and Filters */}
-      <Card className="shadow-soft">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex items-center space-x-2 flex-1">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search invoices..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1"
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="sent">Sent</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="overdue">Overdue</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by invoice # or client..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+             <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[150px]">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="sent">Sent</SelectItem>
+                <SelectItem value="overdue">Overdue</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+              </SelectContent>
+            </Select>
+        </div>
+      </div>
 
-      {/* Invoices Table */}
-      <Card className="shadow-soft">
-        <CardHeader>
-          <CardTitle>Invoice List ({filteredInvoices.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Invoice #</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Due Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Email Sent</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      <div className="flex items-center justify-center">
-                        <Loader2 className="h-6 w-6 animate-spin mr-2" />
-                        Loading invoices...
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : filteredInvoices.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={8}
-                      className="text-center py-8 text-muted-foreground"
-                    >
-                      {searchTerm || statusFilter !== "all"
-                        ? "No invoices found matching your criteria."
-                        : "No invoices created yet."}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredInvoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">
-                        {invoice.invoice_number}
-                      </TableCell>
-                      <TableCell>{invoice.client_name}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
-                          {new Date(invoice.issue_date).toLocaleDateString()}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
-                          {new Date(invoice.due_date).toLocaleDateString()}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {invoice.currency} {invoice.total.toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {invoice.is_recurring ? "Recurring" : "One-time"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {invoice.email_sent_date ? (
-                          <div className="flex items-center">
-                            <Calendar className="h-3 w-3 mr-1 text-muted-foreground" />
-                            {new Date(
-                              invoice.email_sent_date
-                            ).toLocaleDateString()}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">
-                            Not sent
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() =>
-                                navigate(`/app/view-invoice/${invoice.id}`)
-                              }
-                            >
-                              <Eye className="h-4 w-4 mr-2" />
-                              View
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                navigate(`/app/edit-invoice/${invoice.id}`)
-                              }
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteInvoice(invoice.id)}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+      {/* Main Content */}
+      <div className="space-y-4">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>Loading invoices...</span>
           </div>
-        </CardContent>
-      </Card>
+        ) : filteredInvoices.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <p className="font-medium">No Invoices Found</p>
+            <p className="text-sm mt-1">{searchTerm || statusFilter !== 'all' ? "Try adjusting your search or filters." : "Click 'Create Invoice' to get started."}</p>
+          </div>
+        ) : (
+          <>
+            {/* Mobile View */}
+            <div className="grid gap-4 md:hidden">
+              {paginatedInvoices.map((invoice) => {
+                  const status = invoice.calculatedStatus;
+                  const {icon: Icon, color, bgColor} = StatusInfo[status];
+                  return (
+                    <Card key={invoice.id} className="shadow-sm">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-2">
+                           <div className="font-bold text-lg">{invoice.invoice_number}</div>
+                           <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => navigate(`/app/view-invoice/${invoice.id}`)}><Eye className="h-4 w-4 mr-2" />View</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate(`/app/edit-invoice/${invoice.id}`)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDeleteInvoice(invoice.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                            <p className="text-muted-foreground">{invoice.client_name}</p>
+                            <p className="font-semibold text-base">{new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice.currency || 'USD' }).format(invoice.total)}</p>
+                            <div className="flex items-center justify-between text-xs">
+                               <div className={`inline-flex items-center gap-1.5 py-1 px-2 rounded-full text-xs font-medium ${bgColor} ${color}`}>
+                                  <Icon className="h-3 w-3" />
+                                  {status}
+                               </div>
+                               <p>Due: {format(parseISO(invoice.due_date), 'MMM d, yyyy')}</p>
+                            </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+              })}
+            </div>
+
+            {/* Desktop View */}
+            <div className="hidden md:block rounded-lg border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Invoice #</TableHead>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Issue Date</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedInvoices.map((invoice) => {
+                      const status = invoice.calculatedStatus;
+                      const {icon: Icon, color} = StatusInfo[status];
+                      return (
+                        <TableRow key={invoice.id}>
+                          <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                          <TableCell>{invoice.client_name}</TableCell>
+                          <TableCell>{new Intl.NumberFormat('en-US', { style: 'currency', currency: invoice.currency || 'USD' }).format(invoice.total)}</TableCell>
+                          <TableCell>{format(parseISO(invoice.issue_date), 'MMM d, yyyy')}</TableCell>
+                          <TableCell>{format(parseISO(invoice.due_date), 'MMM d, yyyy')}</TableCell>
+                          <TableCell>
+                            <div className={`flex items-center gap-2 ${color}`}>
+                                <Icon className="h-4 w-4" />
+                                <span className="font-medium">{status}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => navigate(`/app/view-invoice/${invoice.id}`)}><Eye className="h-4 w-4 mr-2" />View</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => navigate(`/app/edit-invoice/${invoice.id}`)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleDeleteInvoice(invoice.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      )
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+               <div className="flex items-center justify-center pt-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}/></PaginationItem>
+                    <PaginationItem><span className="text-sm font-medium px-3">Page {currentPage} of {totalPages}</span></PaginationItem>
+                    <PaginationItem><PaginationNext onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}/></PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
