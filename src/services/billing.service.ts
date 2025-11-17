@@ -1,28 +1,47 @@
+
 import { supabase } from "@/lib/supabase";
 
 export class BillingService {
   static async startCheckout(priceId: string) {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error("Not authenticated");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        throw new Error("User must be logged in to start a checkout session.");
+    }
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const response = await fetch(`${supabaseUrl}/functions/v1/create-stripe-session`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({ priceId, mode: "subscription" }),
+    const { data, error } = await supabase.functions.invoke("create-stripe-session", {
+      body: { 
+        user_id: user.id,
+        price_id: priceId 
+    },
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(text || "Failed to create checkout session");
+    if (error) {
+      const errorMessage = await error.context.json();
+      throw new Error(errorMessage.error);
     }
-    const data = await response.json();
-    if (!data.url) throw new Error("No checkout URL returned");
-    window.location.href = data.url;
+
+    const checkoutUrl = data.checkout_url;
+    if (!checkoutUrl) {
+      throw new Error("No checkout URL returned from function.");
+    }
+
+    window.location.href = checkoutUrl;
+  }
+
+  static async manageSubscription() {
+    // No longer needs a user object, as the function will get it from the token.
+    const { data, error } = await supabase.functions.invoke("create-portal-link");
+
+    if (error) {
+      const errorMessage = await error.context.json();
+      throw new Error(errorMessage.error);
+    }
+
+    const portalUrl = data.url;
+    if (!portalUrl) {
+        throw new Error("No portal URL returned from function.");
+    }
+
+    window.location.href = portalUrl;
   }
 }
-
-
