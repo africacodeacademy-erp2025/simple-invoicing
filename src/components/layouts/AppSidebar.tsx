@@ -33,7 +33,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen }) => {
       {/* Header */}
       <div className="h-16 border-b flex items-center px-4 shrink-0">
           <img src={logo} alt="Logo" className="h-10" />
-          <span className="text-lg font-semibold ml-2">Easy Pro</span>
+          <span className="text-lg font-semibold ml-2"></span>
       </div>
 
       {/* Navigation */}
