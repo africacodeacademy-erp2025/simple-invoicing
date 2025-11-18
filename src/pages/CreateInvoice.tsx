@@ -36,6 +36,7 @@ const CreateInvoice = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>(InvoiceTemplate.MODERN);
+  const [activeTab, setActiveTab] = useState('edit'); // Add this line
   const invoicePreviewRef = useRef<HTMLDivElement>(null);
   // This ref will hold the DOM element of the InvoicePreview component
   // which is rendered in the hidden div. This is used to ensure we capture
@@ -318,8 +319,26 @@ const CreateInvoice = () => {
         </div>
       </div>
 
+      {/* Tab switcher for mobile */}
+      <div className="lg:hidden mb-4 border-b">
+        <div className="flex">
+          <button
+            className={`px-4 py-2 text-sm font-medium ${activeTab === 'edit' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+            onClick={() => setActiveTab('edit')}
+          >
+            Edit
+          </button>
+          <button
+            className={`px-4 py-2 text-sm font-medium ${activeTab === 'preview' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+            onClick={() => setActiveTab('preview')}
+          >
+            Preview
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        <div className="lg:col-span-3 space-y-6">
+        <div className={`lg:col-span-3 space-y-6 ${activeTab !== 'edit' && 'hidden'} lg:block`}>
           <div className="flex items-center gap-3">
             <FileText className="h-6 w-6 text-primary"/>
             <h2 className="text-2xl font-semibold">Invoice Details</h2>
@@ -328,7 +347,7 @@ const CreateInvoice = () => {
           <InvoiceForm invoiceData={invoiceData} onUpdateInvoiceData={handleUpdateInvoiceData} userId={user?.id} profile={profile}/>
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
+        <div className={`lg:col-span-2 space-y-6 ${activeTab !== 'preview' && 'hidden'} lg:block`}>
           <div className="sticky top-6 space-y-6">
             <Card>
               <CardHeader className="p-4">

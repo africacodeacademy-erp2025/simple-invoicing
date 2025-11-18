@@ -133,8 +133,25 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
 
           {/* Line Items */}
           {invoiceData.lineItems.length > 0 && (
-            <div className="mb-6 sm:mb-8 overflow-x-auto">
-              <table className="w-full text-left">
+            <div className="mb-6 sm:mb-8">
+              {/* Mobile View */}
+              <div className="sm:hidden space-y-4">
+                {invoiceData.lineItems.map((item) => (
+                  <div key={item.id} className="border-b pb-4">
+                    <div className="font-semibold text-gray-800 mb-2">{item.description}</div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                      <div className="text-gray-500">Quantity</div>
+                      <div className="text-right text-gray-800">{item.quantity}</div>
+                      <div className="text-gray-500">Rate</div>
+                      <div className="text-right text-gray-800">{formatCurrency(item.rate)}</div>
+                      <div className="text-gray-500 font-semibold">Amount</div>
+                      <div className="text-right font-semibold text-gray-800">{formatCurrency(item.amount)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Desktop View */}
+              <table className="w-full text-left hidden sm:table">
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="p-2 sm:p-3 font-semibold text-xs text-gray-600 uppercase">
@@ -177,7 +194,7 @@ export const ModernTemplate = forwardRef<HTMLDivElement, ModernTemplateProps>(
 
           {/* Totals */}
           <div className="flex justify-end mb-6 sm:mb-8">
-            <div className="w-full max-w-[250px]">
+            <div className="w-full sm:max-w-[250px]">
               <table className="w-full">
                 <tbody>
                   <tr>

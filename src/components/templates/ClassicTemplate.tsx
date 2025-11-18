@@ -110,27 +110,46 @@ export const ClassicTemplate = forwardRef<HTMLDivElement, ClassicTemplateProps>(
 
         {/* Line Items */}
         {invoiceData.lineItems.length > 0 && (
-          <div className="mb-6 sm:mb-8 overflow-x-auto">
-            <table className="w-full border-collapse border-2 border-gray-800 text-xs">
-              <thead>
-                <tr className="bg-gray-800 text-white">
-                  <th className="text-left p-2 font-bold uppercase">Description</th>
-                  <th className="text-center p-2 font-bold uppercase">Qty</th>
-                  <th className="text-right p-2 font-bold uppercase">Rate</th>
-                  <th className="text-right p-2 font-bold uppercase">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoiceData.lineItems.map((item, index) => (
-                  <tr key={item.id} className={`${ index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
-                    <td className="p-2 border border-gray-200"><div className="whitespace-pre-line">{item.description}</div></td>
-                    <td className="text-center p-2 border border-gray-200">{item.quantity}</td>
-                    <td className="text-right p-2 border border-gray-200">{formatCurrency(item.rate)}</td>
-                    <td className="text-right p-2 border border-gray-200 font-semibold">{formatCurrency(item.amount)}</td>
+          <div className="mb-6 sm:mb-8">
+            {/* Mobile View */}
+            <div className="sm:hidden space-y-4">
+              {invoiceData.lineItems.map((item) => (
+                <div key={item.id} className="border-b pb-4">
+                  <div className="font-semibold text-gray-800 mb-2">{item.description}</div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                    <div className="text-gray-500">Quantity</div>
+                    <div className="text-right text-gray-800">{item.quantity}</div>
+                    <div className="text-gray-500">Rate</div>
+                    <div className="text-right text-gray-800">{formatCurrency(item.rate)}</div>
+                    <div className="text-gray-500 font-semibold">Amount</div>
+                    <div className="text-right font-semibold text-gray-800">{formatCurrency(item.amount)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Desktop View */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full border-collapse border-2 border-gray-800 text-xs">
+                <thead>
+                  <tr className="bg-gray-800 text-white">
+                    <th className="text-left p-2 font-bold uppercase">Description</th>
+                    <th className="text-center p-2 font-bold uppercase">Qty</th>
+                    <th className="text-right p-2 font-bold uppercase">Rate</th>
+                    <th className="text-right p-2 font-bold uppercase">Amount</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {invoiceData.lineItems.map((item, index) => (
+                    <tr key={item.id} className={`${ index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
+                      <td className="p-2 border border-gray-200"><div className="whitespace-pre-line">{item.description}</div></td>
+                      <td className="text-center p-2 border border-gray-200">{item.quantity}</td>
+                      <td className="text-right p-2 border border-gray-200">{formatCurrency(item.rate)}</td>
+                      <td className="text-right p-2 border border-gray-200 font-semibold">{formatCurrency(item.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 

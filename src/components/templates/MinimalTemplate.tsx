@@ -94,27 +94,46 @@ export const MinimalTemplate = forwardRef<HTMLDivElement, MinimalTemplateProps>(
 
         {/* Line Items */}
         {invoiceData.lineItems.length > 0 && (
-          <div className="mb-6 sm:mb-8 overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b-2 border-gray-300">
-                <tr>
-                  <th className="pb-2 pr-2 font-semibold text-gray-600 uppercase">Description</th>
-                  <th className="pb-2 px-2 font-semibold text-gray-600 uppercase text-right">Qty</th>
-                  <th className="pb-2 px-2 font-semibold text-gray-600 uppercase text-right">Rate</th>
-                  <th className="pb-2 pl-2 font-semibold text-gray-600 uppercase text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoiceData.lineItems.map((item) => (
-                  <tr key={item.id} className="border-b border-gray-100">
-                    <td className="py-2 pr-2"><div className="whitespace-pre-line">{item.description}</div></td>
-                    <td className="py-2 px-2 text-right">{item.quantity}</td>
-                    <td className="py-2 px-2 text-right">{formatCurrency(item.rate)}</td>
-                    <td className="py-2 pl-2 text-right font-semibold">{formatCurrency(item.amount)}</td>
+          <div className="mb-6 sm:mb-8">
+            {/* Mobile View */}
+            <div className="sm:hidden space-y-4">
+              {invoiceData.lineItems.map((item) => (
+                <div key={item.id} className="border-b pb-4">
+                  <div className="font-semibold text-gray-800 mb-2">{item.description}</div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                    <div className="text-gray-500">Quantity</div>
+                    <div className="text-right text-gray-800">{item.quantity}</div>
+                    <div className="text-gray-500">Rate</div>
+                    <div className="text-right text-gray-800">{formatCurrency(item.rate)}</div>
+                    <div className="text-gray-500 font-semibold">Amount</div>
+                    <div className="text-right font-semibold text-gray-800">{formatCurrency(item.amount)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Desktop View */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b-2 border-gray-300">
+                  <tr>
+                    <th className="pb-2 pr-2 font-semibold text-gray-600 uppercase">Description</th>
+                    <th className="pb-2 px-2 font-semibold text-gray-600 uppercase text-right">Qty</th>
+                    <th className="pb-2 px-2 font-semibold text-gray-600 uppercase text-right">Rate</th>
+                    <th className="pb-2 pl-2 font-semibold text-gray-600 uppercase text-right">Amount</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {invoiceData.lineItems.map((item) => (
+                    <tr key={item.id} className="border-b border-gray-100">
+                      <td className="py-2 pr-2"><div className="whitespace-pre-line">{item.description}</div></td>
+                      <td className="py-2 px-2 text-right">{item.quantity}</td>
+                      <td className="py-2 px-2 text-right">{formatCurrency(item.rate)}</td>
+                      <td className="py-2 pl-2 text-right font-semibold">{formatCurrency(item.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
