@@ -11,8 +11,12 @@ const PRICE_TO_PLAN: { [key: string]: string } = {
   "price_1P6iV6SAy4xK41b1FF3MhG22": "business",
 };
 
-const stripe = new Stripe(Deno.env.get("STRIPE_API_KEY") as string, {
-  apiVersion: "2022-08-01",
+const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY"); // Changed to STRIPE_SECRET_KEY
+if (!stripeSecretKey) {
+  throw new Error("Stripe Secret Key is not set in environment variables."); // Updated error message
+}
+const stripe = new Stripe(stripeSecretKey, {
+  apiVersion: "2025-09-30.clover", // Updated API version as per error message
 });
 
 const supabaseAdmin = createClient(
@@ -21,7 +25,7 @@ const supabaseAdmin = createClient(
 );
 
 // Main function handler
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders, status: 204 });
   }
@@ -32,8 +36,15 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization")!;
     const supabase = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "", { global: { headers: { Authorization: authHeader } } });
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError) throw userError;
-    if (!user) throw new Error("User not found.");
+    if (userError) {
+      console.error("Supabase auth.getUser error:", userError);
+      throw userError;
+    }
+    if (!user || !user.id) { // Explicitly check for user.id
+      console.error("User or User ID not found after auth.getUser. User object:", user);
+      throw new Error("Authenticated user ID is missing.");
+    }
+    console.log("Supabase Function: User ID from auth.getUser():", user.id);
 
     const customerId = await getOrCreateStripeCustomer(user, supabaseAdmin);
     const session = await createStripeSession(customerId, price_id, user);
@@ -41,8 +52,9 @@ serve(async (req) => {
     return new Response(JSON.stringify({ checkout_url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -56,10 +68,11 @@ serve(async (req) => {
  * @returns The Stripe customer ID.
  */
 async function getOrCreateStripeCustomer(user: any, supabaseAdmin: SupabaseClient): Promise<string> {
+  console.log("Supabase Function: Entering getOrCreateStripeCustomer. User ID:", user.id);
   const { data: profile } = await supabaseAdmin
     .from("user_profiles")
     .select("stripe_customer_id")
-    .eq("id", user.id)
+    .eq("user_id", user.id) // Query by user_id column
     .single();
 
   if (profile?.stripe_customer_id) {
@@ -77,9 +90,10 @@ async function getOrCreateStripeCustomer(user: any, supabaseAdmin: SupabaseClien
     customerId = customer.id;
   }
 
+  console.log("Supabase Function: Attempting to upsert user_profiles with user_id:", user.id);
   const { error: upsertError } = await supabaseAdmin
     .from("user_profiles")
-    .upsert({ id: user.id, stripe_customer_id: customerId, email: user.email }, { onConflict: "id" });
+    .upsert({ user_id: user.id, stripe_customer_id: customerId, email: user.email }, { onConflict: "user_id" }); // Upsert on user_id
 
   if (upsertError) {
     throw new Error(`Failed to upsert Stripe customer ID: ${upsertError.message}`);
@@ -96,7 +110,14 @@ async function getOrCreateStripeCustomer(user: any, supabaseAdmin: SupabaseClien
  * @returns The Stripe Checkout Session.
  */
 async function createStripeSession(customerId: string, priceId: string, user: any): Promise<Stripe.Checkout.Session> {
-  const siteUrl = Deno.env.get("SITE_URL");
+  // Stripe success/cancel URLs should point to the frontend application's URL, not the Supabase API URL.
+  // A new environment variable, FRONTEND_URL, is introduced for this purpose.
+  const frontendUrl = Deno.env.get("FRONTEND_URL");
+  console.log("Supabase Function: Retrieved FRONTEND_URL:", frontendUrl); // Logging the frontend URL env var
+  if (!frontendUrl || !/^https?:\/\//i.test(frontendUrl)) {
+    console.error('Supabase Function: FRONTEND_URL missing/invalid:', frontendUrl);
+    throw new Error('FRONTEND_URL environment variable is missing or does not include an explicit scheme (e.g., https://). Please ensure it is set in your Supabase Edge Function secrets.');
+  }
   const mode = priceId ? "subscription" : "payment";
 
   const session = await stripe.checkout.sessions.create({
@@ -104,8 +125,8 @@ async function createStripeSession(customerId: string, priceId: string, user: an
     line_items: [{ price: priceId, quantity: 1 }],
     customer: customerId,
     allow_promotion_codes: true,
-    success_url: `${siteUrl}/app/billing?checkout=success`,
-    cancel_url: `${siteUrl}/app/billing?checkout=cancel`,
+    success_url: `${frontendUrl}/app/billing?checkout=success`,
+    cancel_url: `${frontendUrl}/app/billing?checkout=cancel`,
     subscription_data: {
       metadata: { supabase_user_id: user.id },
     },

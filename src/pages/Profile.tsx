@@ -83,8 +83,8 @@ export default function Profile() {
         setProfileData(prev => ({ ...prev, logoUrl: url || "" }));
         toast({ title: "Success", description: "Logo uploaded successfully" });
       } else {
-        toast({ title: "Error", description: response.message, variant: "destructive" });
-      }
+      toast({ title: "Error", description: response.message || "Failed to upload logo. Please try again.", variant: "destructive" });
+    }
     } catch (error) {
       toast({ title: "Error", description: "Failed to upload logo", variant: "destructive" });
     }
@@ -110,10 +110,10 @@ export default function Profile() {
         toast({ title: "Success", description: "Profile saved successfully" });
         await refreshProfile();
       } else {
-        toast({ title: "Error", description: response.message || "An unknown error occurred", variant: "destructive" });
+        toast({ title: "Error", description: response.message || "An unexpected error occurred while saving profile.", variant: "destructive" });
       }
     } catch (error) {
-      toast({ title: "Error", description: "Failed to save profile", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to save profile. Please check your input and try again.", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }

@@ -59,9 +59,10 @@ type InvoiceStatus = "Paid" | "Sent" | "Overdue" | "Draft";
 
 
 const getStatus = (invoice: SavedInvoice): InvoiceStatus => {
-  if (invoice.status === 'paid') return 'Paid';
-  if (isPast(parseISO(invoice.due_date)) && invoice.status !== 'paid') return 'Overdue';
-  if (invoice.status === 'sent') return 'Sent';
+  // Assuming 'invoice_status' is the correct property name based on common conventions and potential type mismatches.
+  if (invoice.invoice_status === 'paid') return 'Paid';
+  if (isPast(parseISO(invoice.due_date)) && invoice.invoice_status !== 'paid') return 'Overdue';
+  if (invoice.invoice_status === 'sent') return 'Sent';
   return 'Draft';
 };
 
@@ -87,11 +88,11 @@ export default function Invoices() {
         if (response.success && response.data) {
           setInvoices(response.data as SavedInvoice[]);
         } else {
-          toast({ title: "Error", description: response.message, variant: "destructive" });
+          toast({ title: "Error", description: response.message || "Failed to load invoices.", variant: "destructive" });
         }
       } catch (error) {
         console.error("Error loading invoices:", error);
-        toast({ title: "Error", description: "Failed to load invoices", variant: "destructive" });
+        toast({ title: "Error", description: "Failed to load invoices. Please try again.", variant: "destructive" });
       } finally {
         setIsLoading(false);
       }
@@ -125,9 +126,9 @@ export default function Invoices() {
         setInvoices((prev) => prev.filter((invoice) => invoice.id !== invoiceId));
         toast({ title: "Invoice Deleted", description: "Invoice has been deleted." });
       } else {
-        toast({ title: "Error", description: response.message, variant: "destructive" });
-      }
-    } catch (error) {
+          toast({ title: "Error", description: response.message || "Failed to load invoices.", variant: "destructive" });
+        }
+      } catch (error) {
       toast({ title: "Error", description: "Failed to delete invoice", variant: "destructive" });
     }
   };
@@ -307,9 +308,9 @@ export default function Invoices() {
                <div className="flex items-center justify-center pt-4">
                 <Pagination>
                   <PaginationContent>
-                    <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}/></PaginationItem>
+                    <PaginationItem><PaginationPrevious onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1 ? true : false}/></PaginationItem>
                     <PaginationItem><span className="text-sm font-medium px-3">Page {currentPage} of {totalPages}</span></PaginationItem>
-                    <PaginationItem><PaginationNext onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}/></PaginationItem>
+                    <PaginationItem><PaginationNext onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages ? true : false}/></PaginationItem>
                   </PaginationContent>
                 </Pagination>
               </div>

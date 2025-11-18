@@ -9,7 +9,7 @@ import { useLocation } from "react-router-dom";
 
 export default function Billing() {
   const { user } = useAuth();
-  const { profile } = useProfile(user?.id ?? null);
+  const { profile, refreshProfile } = useProfile(user?.id ?? null);
   const { toast } = useToast();
   const location = useLocation();
 
@@ -20,6 +20,7 @@ export default function Billing() {
         title: "Subscription updated!",
         description: "Your plan has been successfully updated.",
       });
+      refreshProfile(); 
     }
     if (query.get("checkout") === "cancel") {
       toast({
@@ -28,7 +29,10 @@ export default function Billing() {
         variant: "destructive",
       });
     }
-  }, [location.search, toast]);
+    if (query.get("from_stripe") === "true") {
+      refreshProfile();
+    }
+  }, [location.search, toast, refreshProfile]);
 
   return (
     <div className="space-y-6">
@@ -38,7 +42,7 @@ export default function Billing() {
       </div>
 
       <Card className="shadow-soft">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Current Plan</CardTitle>
         </CardHeader>
         <CardContent className="p-0">

@@ -18,21 +18,21 @@ const ResetPassword: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      toast({ title: "Error", description: "Passwords do not match.", variant: "destructive" });
+      toast({ title: "Password Mismatch", description: "Passwords do not match. Please ensure both fields are identical.", variant: "destructive" });
       return;
     }
     setIsLoading(true);
     try {
       const res = await AuthService.updateUserPassword(password);
       if (!res.success) {
-        toast({ title: "Error", description: res.message || "Failed to reset password.", variant: "destructive" });
+        toast({ title: "Password Reset Error", description: res.message || "Failed to reset password. Please try again.", variant: "destructive" });
         return;
       }
 
       toast({ title: "Success", description: "Your password has been reset successfully." });
       setTimeout(() => navigate("/signin"), 1200);
     } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Unexpected error", variant: "destructive" });
+      toast({ title: "Password Reset Error", description: err instanceof Error ? err.message : "An unexpected error occurred during password reset. Please try again.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }

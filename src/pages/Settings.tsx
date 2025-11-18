@@ -53,7 +53,7 @@ const Settings: React.FC = () => {
   const handleCurrencyChange = async (value: string) => {
     setSelectedCurrency(value);
     if (!user?.id) {
-      toast({ title: "Error", description: "User not logged in.", variant: "destructive" });
+      toast({ title: "Error", description: "User not logged in. Please log in again.", variant: "destructive" });
       return;
     }
 
@@ -63,7 +63,7 @@ const Settings: React.FC = () => {
         toast({ title: "Success", description: "Default currency updated." });
         refetchProfile(); // Re-fetch profile to update context
       } else {
-        toast({ title: "Error", description: response.message, variant: "destructive" });
+        toast({ title: "Error", description: response.message || "Failed to update default currency.", variant: "destructive" });
       }
     } catch (error) {
       toast({ title: "Error", description: "Failed to update default currency.", variant: "destructive" });
@@ -73,8 +73,8 @@ const Settings: React.FC = () => {
   const handleChangePassword = async () => {
     if (newPassword !== confirmNewPassword) {
       toast({
-        title: "Error",
-        description: "Passwords do not match.",
+        title: "Password Mismatch",
+        description: "Passwords do not match. Please ensure both fields are identical.",
         variant: "destructive",
       });
       return;
@@ -98,7 +98,7 @@ const Settings: React.FC = () => {
         setShowChangePasswordDialog(false);
         signOut(); // Log out after password change for security
       } else {
-        toast({ title: "Error", description: response.message, variant: "destructive" });
+        toast({ title: "Error", description: response.message || "Failed to change password.", variant: "destructive" });
       }
     } catch (error) {
       toast({
@@ -119,7 +119,7 @@ const Settings: React.FC = () => {
         toast({ title: "Success", description: response.message });
         signOut(); // Log out after deletion
       } else {
-        toast({ title: "Error", description: response.message, variant: "destructive" });
+        toast({ title: "Error", description: response.message || "Failed to delete account.", variant: "destructive" });
       }
     } catch (error) {
       toast({

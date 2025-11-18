@@ -137,7 +137,7 @@ const CreateInvoice = () => {
     }
     // Use capturedPreviewRef.current instead of invoicePreviewRef.current
     if (!capturedPreviewRef.current || !invoiceData.businessInfo.name || !invoiceData.clientInfo.name) {
-      toast({ title: "Error", description: "Invoice data incomplete.", variant: "destructive" });
+      toast({ title: "Error", description: "Invoice data incomplete. Please fill in all required fields.", variant: "destructive" });
       return;
     }
     setIsGenerating(true);
@@ -203,11 +203,11 @@ const CreateInvoice = () => {
         const savedInvoiceId = Array.isArray(response.data) ? response.data[0]?.id : response.data?.id;
         if (savedInvoiceId) navigate(`/app/view-invoice/${savedInvoiceId}`);
       } else {
-        toast({ title: "Error", description: response.error || "Failed to create invoice.", variant: "destructive" });
+        toast({ title: "Error", description: response.error || "Failed to create invoice. Please try again.", variant: "destructive" });
       }
     } catch (error) {
       console.error(error);
-      toast({ title: "Error", description: "Failed to save invoice.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to save invoice. Please try again.", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }

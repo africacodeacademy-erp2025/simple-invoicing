@@ -110,8 +110,8 @@ export default function Clients() {
     } catch (error) {
       console.error("Error loading clients:", error);
       toast({
-        title: "Error",
-        description: "Failed to load clients",
+        title: "Failed to load clients",
+        description: "An error occurred while fetching client data.",
         variant: "destructive",
       });
     } finally {
@@ -225,8 +225,8 @@ export default function Clients() {
     } catch (error) {
       console.error("Error saving client:", error);
       toast({
-        title: "Error",
-        description: "Something went wrong.",
+        title: "Failed to save client",
+        description: response.error || response.message || "An error occurred while saving client data.",
         variant: "destructive",
       });
     } finally {
@@ -248,16 +248,16 @@ export default function Clients() {
         await loadClients();
       } else {
         toast({
-          title: "Error",
-          description: response.message,
+          title: "Failed to save client",
+          description: response.error || response.message || "An error occurred while saving client data.",
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error deleting client:", error);
       toast({
-        title: "Error",
-        description: "Failed to delete client",
+        title: "Failed to delete client",
+        description: "An error occurred while deleting client data.",
         variant: "destructive",
       });
     }

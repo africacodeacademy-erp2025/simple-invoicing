@@ -7,13 +7,15 @@ import { CorporateTemplate } from "@/components/templates/CorporateTemplate";
 import { CreativeTemplate } from "@/components/templates/CreativeTemplate";
 import { InvoiceData } from "@/types/invoice";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Star } from "lucide-react";
+import { Eye, Star, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 const availableTemplates = [
   {
@@ -21,38 +23,43 @@ const availableTemplates = [
     name: "Minimal",
     component: MinimalTemplate,
     isPremium: true,
+    wordDocPath: "/templates/word/minimal.docx",
   },
   {
     id: "classic",
     name: "Classic",
     component: ClassicTemplate,
     isPremium: false,
+    wordDocPath: "/templates/word/classic.docx",
   },
   {
     id: "modern",
     name: "Modern",
     component: ModernTemplate,
     isPremium: false,
+    wordDocPath: "/templates/word/modern.docx",
   },
   {
     id: "corporate",
     name: "Corporate",
     component: CorporateTemplate,
     isPremium: true,
+    wordDocPath: "/templates/word/corporate.docx",
   },
   {
     id: "creative",
     name: "Creative",
     component: CreativeTemplate,
     isPremium: true,
+    wordDocPath: "/templates/word/creative.docx",
   },
 ];
 
 // Dummy data to populate the templates for preview
 const dummyInvoiceData: InvoiceData = {
   invoiceNumber: "INV-2024-001",
-  date: new Date().toISOString(),
-  dueDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString(),
+  date: new Date().toISOString().split('T')[0],
+  dueDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
   currency: "USD",
   lineItems: [
     { id: 1, description: "Premium Web Development", quantity: 1, rate: 3500, amount: 3500 },
@@ -88,6 +95,21 @@ const dummyInvoiceData: InvoiceData = {
 
 export default function Templates() {
   const [previewTemplate, setPreviewTemplate] = useState<any | null>(null);
+  const { toast } = useToast();
+
+  const handleDownloadWordDoc = (template: any) => {
+    if (template.wordDocPath) {
+      const link = document.createElement('a');
+      link.href = template.wordDocPath;
+      link.download = `${template.name.replace(/\s+/g, '_')}_Template.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast({ title: "Download Started", description: `${template.name} Word document download initiated.` });
+    } else {
+      toast({ title: "Error", description: "Word document not available for this template.", variant: "destructive" });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -107,7 +129,7 @@ export default function Templates() {
               <CardTitle className="flex items-center justify-between">
                 <span>{template.name}</span>
                 {template.isPremium && (
-                  <Badge variant="premium">
+                  <Badge variant="secondary">
                     <Star className="h-3 w-3 mr-1" />
                     Pro
                   </Badge>
@@ -136,6 +158,15 @@ export default function Templates() {
                 </div>
               </div>
             </CardContent>
+            <div className="p-4 border-t flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => handleDownloadWordDoc(template)}
+                className="w-full"
+              >
+                <Download className="h-4 w-4 mr-2" /> Download Word Doc
+              </Button>
+            </div>
           </Card>
         ))}
       </div>
