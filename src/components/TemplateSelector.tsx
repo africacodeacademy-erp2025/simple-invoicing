@@ -66,7 +66,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             onClick={() => onSelectTemplate(template)}
           >
             <div
-              className={`h-20 rounded-md ${template.preview} overflow-hidden border-2 transition-all ${
+              className={`relative h-20 rounded-md ${template.preview} overflow-hidden border-2 transition-all ${
                 isSelected
                   ? "border-primary ring-2 ring-primary/50"
                   : "border-border group-hover:border-muted-foreground"

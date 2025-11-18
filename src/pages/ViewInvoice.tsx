@@ -539,9 +539,9 @@ const ViewInvoice = () => {
             Invoice Preview
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-2 sm:p-4 bg-gray-50">
-            <ScrollArea className="h-[calc(100vh-20rem)] sm:h-[calc(100vh-18rem)] md:h-[calc(100vh-22rem)] w-full rounded-md border">
-                <div className="p-4 bg-white">
+        <CardContent className="p-0 bg-gray-50 rounded-b-lg overflow-hidden">
+            <ScrollArea className="h-[calc(100vh-20rem)] w-full">
+                <div className="bg-white">
                     <InvoicePreview
                         ref={invoicePreviewRef}
                         invoiceData={invoiceData}

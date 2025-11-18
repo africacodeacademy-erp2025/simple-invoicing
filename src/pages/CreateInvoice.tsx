@@ -293,8 +293,8 @@ const CreateInvoice = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="p-6 flex flex-col h-full">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Create Invoice</h1>
           <p className="text-muted-foreground mt-1">Create professional invoices in minutes</p>
@@ -337,8 +337,8 @@ const CreateInvoice = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        <div className={`lg:col-span-3 space-y-6 ${activeTab !== 'edit' && 'hidden'} lg:block`}>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 flex-1 overflow-hidden">
+        <div className={`lg:col-span-3 space-y-6 ${activeTab !== 'edit' && 'hidden'} lg:block overflow-y-auto pr-4`}>
           <div className="flex items-center gap-3">
             <FileText className="h-6 w-6 text-primary"/>
             <h2 className="text-2xl font-semibold">Invoice Details</h2>
@@ -348,7 +348,7 @@ const CreateInvoice = () => {
         </div>
 
         <div className={`lg:col-span-2 space-y-6 ${activeTab !== 'preview' && 'hidden'} lg:block`}>
-          <div className="sticky top-6 space-y-6">
+          <div className="space-y-6">
             <Card>
               <CardHeader className="p-4">
                 <CardTitle className="flex items-center gap-3">
@@ -358,15 +358,13 @@ const CreateInvoice = () => {
               </CardHeader>
               <CardContent className="p-0">
                 <div
-                    className="h-[420px] bg-gray-100 dark:bg-gray-800 rounded-b-lg overflow-hidden relative group cursor-pointer"
+                    className="h-[550px] bg-gray-100 dark:bg-gray-800 rounded-b-lg overflow-y-auto relative group cursor-pointer border"
                     onClick={() => setIsPreviewModalOpen(true)}
                 >
-                    <div className="absolute top-1/2 left-1/2 pointer-events-none transform -translate-x-1/2 -translate-y-1/2 scale-[0.5] origin-center">
-                        <div className="w-[800px] bg-white shadow-2xl">
-                            <SelectedTemplateComponent invoiceData={invoiceData} />
-                        </div>
+                    <div className="bg-white shadow-2xl w-full">
+                        <SelectedTemplateComponent invoiceData={invoiceData} />
                     </div>
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                         <div className="text-white font-semibold flex items-center gap-2 bg-gray-900/50 px-4 py-2 rounded-lg">
                             <Eye className="h-5 w-5" />
                             View Full Preview
