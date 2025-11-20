@@ -105,6 +105,16 @@ const CreateInvoice = () => {
   }, []);
 
   useEffect(() => {
+    // If the user has a profile logo, prefill the invoice business logo so
+    // it appears in the preview and in generated PDFs. Only set when not
+    // already present on the invoice data.
+    if (profile?.logo_url && !invoiceData.businessInfo.logo) {
+      setInvoiceData((prev) => ({
+        ...prev,
+        businessInfo: { ...prev.businessInfo, logo: profile.logo_url },
+      }));
+    }
+
     // When selectedTemplate changes, update capturedPreviewRef to point to the new DOM element.
     // This ensures that when generatePDF or handlePrintInvoice are called, they use the
     // most up-to-date preview content.

@@ -23,6 +23,7 @@ import Billing from "./pages/Billing";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Settings from "./pages/Settings"; // Import the new Settings component
+import Templates from "./pages/Templates";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,7 @@ const App = () => (
               <Route path="clients" element={<Clients />} />
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} /> {/* Add the new Settings route */}
+                <Route path="templates" element={<Templates />} />
               <Route path="billing" element={<Billing />} />
             </Route>
 

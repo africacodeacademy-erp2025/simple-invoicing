@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { User, PanelLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,18 +21,47 @@ const getPageTitle = (pathname: string) => {
 
 export const DashboardLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPageTitle = getPageTitle(location.pathname);
   const { user } = useAuth();
-  const { profile, hasCompleteProfile, profileLoading } = useProfile(user?.id || null);
+  const { profile, hasCompleteProfile, profileLoading, refreshProfile } = useProfile(user?.id || null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!profileLoading) {
-      setShowProfileModal(!!user && !hasCompleteProfile);
+      // Respect a session dismissal flag so the modal doesn't reappear immediately
+      let dismissed = false;
+      try {
+        dismissed = sessionStorage.getItem("profile_setup_dismissed") === "true";
+      } catch (e) {
+        dismissed = false;
+      }
+
+      setShowProfileModal(!!user && !hasCompleteProfile && !dismissed);
     }
   }, [user, hasCompleteProfile, profileLoading]);
+
+  // If the profile becomes complete, clear the dismissal flag so future sessions behave normally
+  useEffect(() => {
+    if (hasCompleteProfile) {
+      try {
+        sessionStorage.removeItem("profile_setup_dismissed");
+      } catch (e) {
+        /* ignore */
+      }
+    }
+  }, [hasCompleteProfile]);
+
+  const closeProfileModal = () => {
+    try {
+      sessionStorage.setItem("profile_setup_dismissed", "true");
+    } catch (e) {
+      /* ignore */
+    }
+    setShowProfileModal(false);
+  };
 
   useEffect(() => {
     if (!isMobile) {
@@ -73,8 +102,14 @@ export const DashboardLayout = () => {
 
             <div className="flex items-center gap-2 sm:gap-4">
               <ThemeToggle />
-              <Button variant="ghost" size="icon" className="rounded-full">
-                 {profile?.logo_url ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                onClick={() => navigate('/app/profile')}
+                title="Go to Profile"
+              >
+                {profile?.logo_url ? (
                   <img
                     src={profile.logo_url}
                     alt="Profile Logo"

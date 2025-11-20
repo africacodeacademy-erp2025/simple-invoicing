@@ -22,7 +22,22 @@ export default function ProfileSetupModal({
   const navigate = useNavigate();
 
   const handleGoToProfile = () => {
+    // Mark the modal dismissed for this session to avoid reopening while user edits profile
+    try {
+      sessionStorage.setItem("profile_setup_dismissed", "true");
+    } catch (e) {
+      /* ignore */
+    }
     navigate("/app/profile");
+    onClose();
+  };
+
+  const handleMaybeLater = () => {
+    try {
+      sessionStorage.setItem("profile_setup_dismissed", "true");
+    } catch (e) {
+      /* ignore */
+    }
     onClose();
   };
 
@@ -73,15 +88,12 @@ export default function ProfileSetupModal({
 
           {/* Actions */}
           <div className="flex flex-col gap-3">
-            <Button
-              onClick={handleGoToProfile}
-              className="w-full bg-primary-gradient hover:opacity-90"
-            >
+            <Button onClick={handleGoToProfile} className="w-full bg-primary-gradient hover:opacity-90">
               <Building2 className="h-4 w-4 mr-2" />
               Set Up Profile
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
-            <Button variant="outline" onClick={onClose} className="w-full">
+            <Button variant="outline" onClick={handleMaybeLater} className="w-full">
               Maybe Later
             </Button>
           </div>

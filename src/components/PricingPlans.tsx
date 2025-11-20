@@ -22,7 +22,7 @@ const plans: Array<{
     name: "Starter",
     priceMonthly: "Free",
     blurb: "Get started with basic invoicing",
-    features: ["5 invoices/month", "3 clients", "1 template"],
+    features: ["5 invoices/month", "1 template"],
     priceEnvVar: undefined,
   },
   {

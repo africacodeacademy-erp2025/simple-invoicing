@@ -5,6 +5,16 @@ import { ClassicTemplate } from "@/components/templates/ClassicTemplate";
 import { ModernTemplate } from "@/components/templates/ModernTemplate";
 import { CorporateTemplate } from "@/components/templates/CorporateTemplate";
 import { CreativeTemplate } from "@/components/templates/CreativeTemplate";
+import { XeroTemplate } from "@/components/templates/XeroTemplate";
+import { BilledAppTemplate } from "@/components/templates/BilledAppTemplate";
+import { StandardTemplate } from "@/components/templates/StandardTemplate";
+import { CreativeGeometricTemplate } from "@/components/templates/CreativeGeometricTemplate";
+import { VibrantTemplate } from "@/components/templates/VibrantTemplate";
+import { ZohoBrandedTemplate } from "@/components/templates/ZohoBrandedTemplate";
+import QuickBooksTemplate from "@/components/templates/QuickBooksTemplate";
+import InvoiceHomeCreativeTemplate from "@/components/templates/InvoiceHomeCreativeTemplate";
+import TasmimakDesignerTemplate from "@/components/templates/TasmimakDesignerTemplate";
+import ZistemoProfessionalTemplate from "@/components/templates/ZistemoProfessionalTemplate";
 import { InvoiceData } from "@/types/invoice";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Star, Download } from "lucide-react";
@@ -15,14 +25,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import { TemplateService } from "@/services/template.service";
 
 const availableTemplates = [
   {
     id: "minimal",
     name: "Minimal",
     component: MinimalTemplate,
-    isPremium: true,
+    isPremium: false,
     wordDocPath: "/templates/word/minimal.docx",
   },
   {
@@ -43,15 +54,85 @@ const availableTemplates = [
     id: "corporate",
     name: "Corporate",
     component: CorporateTemplate,
-    isPremium: true,
+    isPremium: false,
     wordDocPath: "/templates/word/corporate.docx",
   },
   {
     id: "creative",
     name: "Creative",
     component: CreativeTemplate,
-    isPremium: true,
+    isPremium: false,
     wordDocPath: "/templates/word/creative.docx",
+  },
+  {
+    id: "xero",
+    name: "Xero",
+    component: XeroTemplate,
+    isPremium: false,
+    wordDocPath: "/templates/word/xero.docx",
+  },
+  {
+    id: "billed_app",
+    name: "Billed App",
+    component: BilledAppTemplate,
+    isPremium: false,
+    wordDocPath: "/templates/word/billed_app.docx",
+  },
+  {
+    id: "standard",
+    name: "Standard",
+    component: StandardTemplate,
+    isPremium: false,
+    wordDocPath: "/templates/word/standard.docx",
+  },
+  {
+    id: "creative_geometric",
+    name: "Creative Geometric",
+    component: CreativeGeometricTemplate,
+    isPremium: false,
+    wordDocPath: "/templates/word/creative_geometric.docx",
+  },
+    {
+      id: "vibrant",
+      name: "Vibrant",
+      component: VibrantTemplate,
+      isPremium: false,
+      wordDocPath: "/templates/word/vibrant.docx",
+    },
+  {
+    id: "zoho",
+    name: "Zoho Branded",
+    component: ZohoBrandedTemplate,
+    isPremium: false,
+    wordDocPath: "/templates/word/zoho_branded.docx",
+  },
+  {
+    id: "quickbooks",
+    name: "QuickBooks",
+    component: QuickBooksTemplate,
+    isPremium: false,
+    wordDocPath: "/templates/word/quickbooks.docx",
+  },
+  {
+    id: "invoicehome_creative",
+    name: "InvoiceHome Creative",
+    component: InvoiceHomeCreativeTemplate,
+    isPremium: false,
+    wordDocPath: "/templates/word/invoicehome_creative.docx",
+  },
+  {
+    id: "tasmimak_designer",
+    name: "Tasmimak Designer",
+    component: TasmimakDesignerTemplate,
+    isPremium: false,
+    wordDocPath: "/templates/word/tasmimak_designer.docx",
+  },
+  {
+    id: "zistemo_professional",
+    name: "Zistemo Professional",
+    component: ZistemoProfessionalTemplate,
+    isPremium: false,
+    wordDocPath: "/templates/word/zistemo_professional.docx",
   },
 ];
 
@@ -97,17 +178,18 @@ export default function Templates() {
   const [previewTemplate, setPreviewTemplate] = useState<any | null>(null);
   const { toast } = useToast();
 
-  const handleDownloadWordDoc = (template: any) => {
-    if (template.wordDocPath) {
-      const link = document.createElement('a');
-      link.href = template.wordDocPath;
-      link.download = `${template.name.replace(/\s+/g, '_')}_Template.docx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast({ title: "Download Started", description: `${template.name} Word document download initiated.` });
-    } else {
-      toast({ title: "Error", description: "Word document not available for this template.", variant: "destructive" });
+  const handleDownloadWordDoc = async (template: any) => {
+    try {
+      toast({ title: "Preparing download", description: `Generating ${template.name} Word document...` });
+      const response = await TemplateService.downloadTemplate(template.id, "word");
+      if (!response.success) {
+        toast({ title: "Download failed", description: response.message || "Failed to download template.", variant: "destructive" });
+      } else {
+        toast({ title: "Download Started", description: `${template.name} Word document download initiated.` });
+      }
+    } catch (error) {
+      console.error("Error downloading Word template:", error);
+      toast({ title: "Error", description: "Failed to generate Word document.", variant: "destructive" });
     }
   };
 
@@ -128,12 +210,7 @@ export default function Templates() {
             <CardHeader className="p-4 border-b">
               <CardTitle className="flex items-center justify-between">
                 <span>{template.name}</span>
-                {template.isPremium && (
-                  <Badge variant="secondary">
-                    <Star className="h-3 w-3 mr-1" />
-                    Pro
-                  </Badge>
-                )}
+                {/* Pro badge removed, all templates are now accessible to all users */}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 flex-grow">
@@ -146,7 +223,7 @@ export default function Templates() {
                   className="absolute top-1/2 left-1/2 pointer-events-none transform -translate-x-1/2 -translate-y-1/2 scale-[0.4] origin-center"
                 >
                   <div className="w-[800px] bg-white shadow-2xl">
-                    <template.component invoiceData={dummyInvoiceData} />
+                    {React.createElement(template.component, { invoiceData: dummyInvoiceData })}
                   </div>
                 </div>
 
@@ -185,7 +262,7 @@ export default function Templates() {
           <div className="h-full overflow-y-auto bg-gray-200 p-8">
             <div className="w-full max-w-3xl mx-auto shadow-lg">
               {previewTemplate && (
-                <previewTemplate.component invoiceData={dummyInvoiceData} />
+                React.createElement(previewTemplate.component, { invoiceData: dummyInvoiceData })
               )}
             </div>
           </div>

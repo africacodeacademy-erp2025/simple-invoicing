@@ -25,7 +25,8 @@ export const CorporateTemplate = forwardRef<
   };
 
   const formatCurrency = (amount: number) => {
-    return `${currencySymbol}${amount.toFixed(2)}`;
+    const value = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+    return `${currencySymbol}${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   return (

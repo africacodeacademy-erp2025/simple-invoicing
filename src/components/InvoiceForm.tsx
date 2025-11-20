@@ -148,6 +148,40 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     (c) => c.code === invoiceData.currency
   );
 
+  const formatNumberForInput = (value: number) =>
+    (typeof value === "number" && !isNaN(value)
+      ? value
+      : 0
+    ).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const formatAmountDisplay = (amount: number) => {
+    const value = typeof amount === "number" && !isNaN(amount) ? amount : 0;
+    return `${selectedCurrency?.symbol || "$"}${value.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
+  // Keep a preview URL in state and initialize it from invoiceData or profile
+  useEffect(() => {
+    const logo = invoiceData.businessInfo.logo;
+    if (logo) {
+      if (typeof logo === "string") {
+        setLogoPreview(logo);
+      } else if (logo instanceof File) {
+        const reader = new FileReader();
+        reader.onload = (e) => setLogoPreview(e.target?.result as string);
+        reader.readAsDataURL(logo);
+      } else {
+        setLogoPreview(null);
+      }
+    } else if (profile?.logo_url) {
+      setLogoPreview(profile.logo_url);
+    } else {
+      setLogoPreview(null);
+    }
+  }, [invoiceData.businessInfo.logo, profile?.logo_url]);
+
   // Check if profile is complete (has essential business information)
   const isProfileComplete =
     profile &&
@@ -410,138 +444,145 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
         </CardContent>
       </Card>
 
-      {/* Business Information - Only show if profile is incomplete or no logo */}
-      {(!isProfileComplete || !hasProfileLogo) && (
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              {isProfileComplete ? "Company Logo" : "Business Information"}
-            </CardTitle>
-            {isProfileComplete && (
-              <p className="text-sm text-muted-foreground">
-                Your business information is complete. You can only update your
-                logo here.
-              </p>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Logo Upload - Always show if no profile logo */}
-            {!hasProfileLogo && (
+      <Card className="shadow-soft">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Business Information</CardTitle>
+          {isProfileComplete && (
+            <p className="text-sm text-muted-foreground">
+              Your business information is complete. You can change the logo below.
+            </p>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="logo">Company Logo</Label>
+            <div className="flex items-center gap-4">
+              <div className="relative flex items-center gap-2">
+                <Input
+                  id="logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="sr-only"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById("logo")?.click()}
+                  className="flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload Logo
+                </Button>
+                {logoPreview && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setLogoPreview(null);
+                      onUpdateInvoiceData({
+                        ...invoiceData,
+                        businessInfo: { ...invoiceData.businessInfo, logo: null },
+                      });
+                    }}
+                    className="text-sm"
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+              {logoPreview && (
+                <div className="w-16 h-16 rounded-lg overflow-hidden border shadow-soft">
+                  <img
+                    src={logoPreview}
+                    alt="Logo preview"
+                    className="w-full h-full object-contain bg-background"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Business Information Fields - Only show if profile is incomplete */}
+          {!isProfileComplete && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="logo">Company Logo</Label>
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <Input
-                      id="logo"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                      className="sr-only"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById("logo")?.click()}
-                      className="flex items-center gap-2"
-                    >
-                      <Upload className="h-4 w-4" />
-                      Upload Logo
-                    </Button>
-                  </div>
-                  {logoPreview && (
-                    <div className="w-16 h-16 rounded-lg overflow-hidden border shadow-soft">
-                      <img
-                        src={logoPreview}
-                        alt="Logo preview"
-                        className="w-full h-full object-contain bg-background"
-                      />
-                    </div>
-                  )}
-                </div>
+                <Label htmlFor="businessName">Business Name</Label>
+                <Input
+                  id="businessName"
+                  value={invoiceData.businessInfo.name}
+                  onChange={(e) =>
+                    onUpdateInvoiceData({
+                      ...invoiceData,
+                      businessInfo: {
+                        ...invoiceData.businessInfo,
+                        name: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="Your Business Name"
+                />
               </div>
-            )}
 
-            {/* Business Information Fields - Only show if profile is incomplete */}
-            {!isProfileComplete && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="businessName">Business Name</Label>
-                  <Input
-                    id="businessName"
-                    value={invoiceData.businessInfo.name}
-                    onChange={(e) =>
-                      onUpdateInvoiceData({
-                        ...invoiceData,
-                        businessInfo: {
-                          ...invoiceData.businessInfo,
-                          name: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="Your Business Name"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="businessEmail">Email</Label>
-                  <Input
-                    id="businessEmail"
-                    type="email"
-                    value={invoiceData.businessInfo.email}
-                    onChange={(e) =>
-                      onUpdateInvoiceData({
-                        ...invoiceData,
-                        businessInfo: {
-                          ...invoiceData.businessInfo,
-                          email: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="business@example.com"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="businessPhone">Phone</Label>
-                  <Input
-                    id="businessPhone"
-                    value={invoiceData.businessInfo.phone}
-                    onChange={(e) =>
-                      onUpdateInvoiceData({
-                        ...invoiceData,
-                        businessInfo: {
-                          ...invoiceData.businessInfo,
-                          phone: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="+1 (555) 123-4567"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="businessAddress">Address</Label>
-                  <Textarea
-                    id="businessAddress"
-                    value={invoiceData.businessInfo.address}
-                    onChange={(e) =>
-                      onUpdateInvoiceData({
-                        ...invoiceData,
-                        businessInfo: {
-                          ...invoiceData.businessInfo,
-                          address: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="123 Business St, City, State 12345"
-                    className="min-h-[80px]"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="businessEmail">Email</Label>
+                <Input
+                  id="businessEmail"
+                  type="email"
+                  value={invoiceData.businessInfo.email}
+                  onChange={(e) =>
+                    onUpdateInvoiceData({
+                      ...invoiceData,
+                      businessInfo: {
+                        ...invoiceData.businessInfo,
+                        email: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="business@example.com"
+                />
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+
+              <div className="space-y-2">
+                <Label htmlFor="businessPhone">Phone</Label>
+                <Input
+                  id="businessPhone"
+                  value={invoiceData.businessInfo.phone}
+                  onChange={(e) =>
+                    onUpdateInvoiceData({
+                      ...invoiceData,
+                      businessInfo: {
+                        ...invoiceData.businessInfo,
+                        phone: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="businessAddress">Address</Label>
+                <Textarea
+                  id="businessAddress"
+                  value={invoiceData.businessInfo.address}
+                  onChange={(e) =>
+                    onUpdateInvoiceData({
+                      ...invoiceData,
+                      businessInfo: {
+                        ...invoiceData.businessInfo,
+                        address: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="123 Business St, City, State 12345"
+                  className="min-h-[80px]"
+                />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Client Information */}
       <Card className="shadow-soft">
@@ -912,27 +953,21 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                   <div className="md:col-span-2 space-y-2">
                     <Label>Rate ({selectedCurrency?.symbol})</Label>
                     <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.rate}
-                      onChange={(e) =>
-                        updateLineItem(
-                          item.id,
-                          "rate",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
+                      type="text"
+                      value={formatNumberForInput(item.rate)}
+                      onChange={(e) => {
+                        // remove any non-numeric characters except dot and minus
+                        const raw = e.target.value.replace(/[^0-9.\-]/g, "");
+                        const parsed = parseFloat(raw);
+                        updateLineItem(item.id, "rate", Number.isNaN(parsed) ? 0 : parsed);
+                      }}
                     />
                   </div>
 
                   <div className="md:col-span-3 space-y-2">
                     <Label>Amount</Label>
                     <div className="h-9 px-3 py-2 bg-muted rounded-md flex items-center text-sm overflow-hidden">
-                      <span className="truncate">
-                        {selectedCurrency?.symbol}
-                        {item.amount.toFixed(2)}
-                      </span>
+                      <span className="truncate">{formatAmountDisplay(item.amount)}</span>
                     </div>
                   </div>
 

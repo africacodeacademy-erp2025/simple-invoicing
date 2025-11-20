@@ -3,7 +3,8 @@ export enum InvoiceTemplate {
   CLASSIC = 'classic', 
   MINIMAL = 'minimal',
   CREATIVE = 'creative',
-  CORPORATE = 'corporate'
+  CORPORATE = 'corporate',
+  XERO = 'xero'
 }
 
 export interface TemplateInfo {
