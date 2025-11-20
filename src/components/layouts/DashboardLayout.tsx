@@ -124,7 +124,7 @@ export const DashboardLayout = () => {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 bg-background/90">
+        <main className="flex-1 bg-background/90 p-0">
           <Outlet />
         </main>
       </div>

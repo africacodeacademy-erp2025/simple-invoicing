@@ -588,23 +588,61 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="businessAddress">Address</Label>
-                <Textarea
-                  id="businessAddress"
-                  value={invoiceData.businessInfo.address}
-                  onChange={(e) =>
-                    onUpdateInvoiceData({
-                      ...invoiceData,
-                      businessInfo: {
-                        ...invoiceData.businessInfo,
-                        address: e.target.value,
-                      },
-                    })
-                  }
-                  placeholder="123 Business St, City, State 12345"
-                  className="min-h-[80px]"
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="businessEmail">Email</Label>
+                  <Input
+                    id="businessEmail"
+                    type="email"
+                    value={invoiceData.businessInfo.email}
+                    onChange={(e) =>
+                      onUpdateInvoiceData({
+                        ...invoiceData,
+                        businessInfo: {
+                          ...invoiceData.businessInfo,
+                          email: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="business@example.com"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="businessPhone">Phone</Label>
+                  <Input
+                    id="businessPhone"
+                    value={invoiceData.businessInfo.phone}
+                    onChange={(e) =>
+                      onUpdateInvoiceData({
+                        ...invoiceData,
+                        businessInfo: {
+                          ...invoiceData.businessInfo,
+                          phone: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="+1 (555) 123-4567"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="businessAddress">Address</Label>
+                  <Textarea
+                    id="businessAddress"
+                    value={invoiceData.businessInfo.address}
+                    onChange={(e) =>
+                      onUpdateInvoiceData({
+                        ...invoiceData,
+                        businessInfo: {
+                          ...invoiceData.businessInfo,
+                          address: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="123 Business St, City, State 12345"
+                    className="min-h-[60px]"
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -746,25 +784,24 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 placeholder="client@example.com"
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="clientAddress">Client Address</Label>
-            <Textarea
-              id="clientAddress"
-              value={invoiceData.clientInfo.address}
-              onChange={(e) =>
-                onUpdateInvoiceData({
-                  ...invoiceData,
-                  clientInfo: {
-                    ...invoiceData.clientInfo,
-                    address: e.target.value,
-                  },
-                })
-              }
-              placeholder="123 Client St, City, State 12345"
-              className="min-h-[80px]"
-            />
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="clientAddress">Client Address</Label>
+              <Textarea
+                id="clientAddress"
+                value={invoiceData.clientInfo.address}
+                onChange={(e) =>
+                  onUpdateInvoiceData({
+                    ...invoiceData,
+                    clientInfo: {
+                      ...invoiceData.clientInfo,
+                      address: e.target.value,
+                    },
+                  })
+                }
+                placeholder="123 Client St, City, State 12345"
+                className="min-h-[60px]"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -780,8 +817,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             Invoice Details
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="invoiceNumber">Invoice Number</Label>
               <Input
@@ -795,6 +832,30 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 }
                 placeholder="INV-001"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="currency">Currency</Label>
+              <Select
+                value={invoiceData.currency}
+                onValueChange={(value) =>
+                  onUpdateInvoiceData({
+                    ...invoiceData,
+                    currency: value,
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies.map((currency) => (
+                    <SelectItem key={currency.code} value={currency.code}>
+                      {currency.symbol} - {currency.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -826,30 +887,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 }
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="currency">Currency</Label>
-            <Select
-              value={invoiceData.currency}
-              onValueChange={(value) =>
-                onUpdateInvoiceData({
-                  ...invoiceData,
-                  currency: value,
-                })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {currencies.map((currency) => (
-                  <SelectItem key={currency.code} value={currency.code}>
-                    {currency.symbol} - {currency.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
 
@@ -953,71 +990,83 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {invoiceData.lineItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border rounded-lg"
-                >
-                  <div className="md:col-span-4 space-y-2">
-                    <Label>Description</Label>
+              {invoiceData.lineItems.map((item, index) => (
+                <div key={item.id} className="p-3 border rounded-lg space-y-3">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm font-medium">Item {index + 1}</Label>
+                    <Button
+                      onClick={() => removeLineItem(item.id)}
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`description-${item.id}`}>Description</Label>
                     <Textarea
+                      id={`description-${item.id}`}
                       value={item.description}
                       onChange={(e) =>
                         updateLineItem(item.id, "description", e.target.value)
                       }
                       placeholder="Service or product description"
-                      className="min-h-[60px]"
+                      className="min-h-[40px]"
+                      rows={1}
                     />
                   </div>
-
-                  <div className="md:col-span-2 space-y-2">
-                    <Label>Quantity</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={item.quantity}
-                      onChange={(e) =>
-                        updateLineItem(
-                          item.id,
-                          "quantity",
-                          parseInt(e.target.value) || 1
-                        )
-                      }
-                      className="text-center"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2 space-y-2">
-                    <Label>Rate ({selectedCurrency?.symbol})</Label>
-                    <Input
-                      type="text"
-                      value={formatNumberForInput(item.rate)}
-                      onChange={(e) => {
-                        // remove any non-numeric characters except dot and minus
-                        const raw = e.target.value.replace(/[^0-9.\-]/g, "");
-                        const parsed = parseFloat(raw);
-                        updateLineItem(item.id, "rate", Number.isNaN(parsed) ? 0 : parsed);
-                      }}
-                    />
-                  </div>
-
-                  <div className="md:col-span-3 space-y-2">
-                    <Label>Amount</Label>
-                    <div className="h-9 px-3 py-2 bg-muted rounded-md flex items-center text-sm overflow-hidden">
-                      <span className="truncate">{formatAmountDisplay(item.amount)}</span>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
+                      <Input
+                        id={`quantity-${item.id}`}
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={item.quantity}
+                        onChange={(e) =>
+                          updateLineItem(
+                            item.id,
+                            "quantity",
+                            parseInt(e.target.value) || 1
+                          )
+                        }
+                        className="text-center"
+                      />
                     </div>
-                  </div>
-
-                  <div className="md:col-span-1 flex items-center justify-center">
-                    <Button
-                      onClick={() => removeLineItem(item.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="space-y-2">
+                      <Label htmlFor={`rate-${item.id}`}>Rate</Label>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">
+                          {selectedCurrency?.symbol}
+                        </span>
+                        <Input
+                          id={`rate-${item.id}`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.rate}
+                          onChange={(e) =>
+                            updateLineItem(
+                              item.id,
+                              "rate",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          className="pl-7"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Amount</Label>
+                      <div className="h-9 px-3 py-2 bg-muted rounded-md flex items-center text-sm overflow-hidden">
+                        <span className="truncate">
+                          {selectedCurrency?.symbol}
+                          {item.amount.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1059,6 +1108,33 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 <p className="text-xs text-red-500">Must be at least 1 character</p>
               )}
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Notes */}
+      <Card className="shadow-soft">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Notes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="notes">Additional Notes</Label>
+            <Textarea
+              id="notes"
+              value={invoiceData.notes}
+              onChange={(e) =>
+                onUpdateInvoiceData({
+                  ...invoiceData,
+                  notes: e.target.value,
+                })
+              }
+              placeholder="Thank you for your business!"
+              className="min-h-[60px]"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
             <div className="space-y-2">
               <Label htmlFor="accountName">Account Name:</Label>
