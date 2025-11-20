@@ -1,26 +1,21 @@
 import { serve } from "std/http/server.ts";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, {
   apiVersion: "2025-09-30.clover",
 });
 
-const supabase = createClient(
-  Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-);
+serve(async (req: Request) => {
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false } }
+  );
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "content-type",
-};
-
-serve(async (req) => {
-  console.log('Stripe Webhook received request. Headers:', JSON.stringify(Object.fromEntries(req.headers.entries())));
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders, status: 204 });
   }
 
   if (req.method !== "POST") {
@@ -38,8 +33,9 @@ serve(async (req) => {
 
   try {
     event = await stripe.webhooks.constructEventAsync(rawBody, sig, webhookSecret);
-  } catch (err) {
-    console.error("Webhook signature verification failed.", err);
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Unknown error during signature verification.";
+    console.error("Webhook signature verification failed.", errorMessage);
     return new Response("Bad signature", { status: 400, headers: corsHeaders });
   }
 
@@ -62,7 +58,11 @@ serve(async (req) => {
           const customerId = (session.customer as string) || undefined;
           const priceId = (session.line_items?.data?.[0]?.price?.id as string) || (session.metadata?.priceId as string) || undefined;
           let supabaseUserId = session.metadata?.supabase_user_id as string | undefined;
-          console.log('Received checkout.session.completed for session:', session.id, 'customer:', session.customer);
+          console.log('Webhook: Received checkout.session.completed for session:', session.id, 'customer:', session.customer);
+          console.log('Webhook: Session Metadata:', session.metadata);
+          console.log('Webhook: Resolved Price ID:', resolvedPriceId);
+          console.log('Webhook: Plan Info:', planInfo);
+          console.log('Webhook: Current Period End:', currentPeriodEnd);
 
           // Fallback: retrieve subscription to get items/price
           let resolvedPriceId = priceId;
@@ -122,7 +122,7 @@ serve(async (req) => {
           }
 
           if (supabaseUserId) {
-            await supabase
+            const { data: upsertData, error: upsertError } = await supabase
               .from("user_profiles")
               .upsert(
                 {
@@ -136,15 +136,20 @@ serve(async (req) => {
                 },
                 { onConflict: "user_id" }
               );
-            console.log('Updated user_profiles for user:', supabaseUserId, 'plan:', planInfo?.plan || 'pro');
+            if (upsertError) {
+              console.error('Webhook: Error updating user_profiles for user:', supabaseUserId, upsertError);
+            } else {
+              console.log('Webhook: Successfully updated user_profiles for user:', supabaseUserId, 'plan:', planInfo?.plan || 'pro', 'data:', upsertData);
+            }
           } else {
-            console.warn('Could not resolve supabase user id for session', session.id, 'customer', customerId);
+            console.warn('Webhook: Could not resolve supabase user id for session', session.id, 'customer', customerId);
           }
         }
         break;
       }
       case "customer.subscription.created": {
         const subscription = event.data.object as Stripe.Subscription;
+        let userId = subscription.metadata?.supabase_user_id as string | undefined;
         const customerId = subscription.customer as string;
         const priceId = subscription.items.data[0]?.price.id;
         const planInfo = priceId ? PRICE_TO_PLAN[priceId] : undefined;
@@ -153,35 +158,53 @@ serve(async (req) => {
           ? new Date(subscription.current_period_end * 1000).toISOString()
           : null;
 
-        const { data: profiles } = await supabase
-          .from("user_profiles")
-          .select("user_id")
-          .eq("stripe_customer_id", customerId)
-          .limit(1);
-
-        const userId = profiles?.[0]?.user_id;
-        if (userId) {
-          await supabase
+        if (!userId) {
+          const { data: profiles } = await supabase
             .from("user_profiles")
-            .update({
-              plan: planInfo?.plan || "pro",
-              subscription_status: status === "active" ? "active" : "incomplete_expired", // Set based on Stripe status
-              current_period_end: currentPeriodEnd,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", userId);
+            .select("user_id")
+            .eq("stripe_customer_id", customerId)
+            .limit(1);
+          userId = profiles?.[0]?.user_id;
+        }
+
+        if (userId) {
+          const { data: upsertData, error: upsertError } = await supabase
+            .from("user_profiles")
+            .upsert(
+              {
+                user_id: userId,
+                plan: planInfo?.plan || "pro",
+                subscription_status: status === "active" ? "active" : "incomplete_expired",
+                stripe_customer_id: customerId,
+                stripe_subscription_id: subscription.id,
+                current_period_end: currentPeriodEnd,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "user_id" }
+            );
+          if (upsertError) {
+            console.error('Webhook: Error upserting user_profiles for user:', userId, upsertError);
+          } else {
+            console.log('Webhook: Successfully upserted user_profiles for user:', userId, 'plan:', planInfo?.plan || 'pro', 'status:', status, 'data:', upsertData);
+          }
+        } else {
+          console.warn('Webhook: Could not resolve user id for customer.subscription.created event, customer:', customerId);
         }
         break;
       }
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         const customerId = subscription.customer as string;
-        const status = subscription.status;
+        let status = subscription.status;
         const currentPeriodEnd = subscription.current_period_end
           ? new Date(subscription.current_period_end * 1000).toISOString()
           : null;
         const priceId = subscription.items.data[0]?.price?.id;
         const planInfo = priceId ? PRICE_TO_PLAN[priceId] : undefined;
+
+        if (subscription.cancel_at_period_end) {
+          status = "pending_cancellation";
+        }
 
         // Find user by stripe_customer_id
         const { data: profiles } = await supabase
@@ -192,7 +215,7 @@ serve(async (req) => {
 
         const userId = profiles?.[0]?.user_id;
         if (userId) {
-          await supabase
+          const { data: updateData, error: updateError } = await supabase
             .from("user_profiles")
             .update({
               plan: planInfo?.plan || "pro", // Default to 'pro' if planInfo is undefined
@@ -201,6 +224,13 @@ serve(async (req) => {
               updated_at: new Date().toISOString(),
             })
             .eq("user_id", userId);
+          if (updateError) {
+            console.error('Webhook: Error updating user_profiles for user:', userId, updateError);
+          } else {
+            console.log('Webhook: Successfully updated user_profiles for user:', userId, 'plan:', planInfo?.plan || 'pro', 'status:', status, 'data:', updateData);
+          }
+        } else {
+          console.warn('Webhook: Could not resolve user id for customer.subscription.updated event, customer:', customerId);
         }
         break;
       }
@@ -216,7 +246,7 @@ serve(async (req) => {
 
         const userId = profiles?.[0]?.user_id;
         if (userId) {
-          await supabase
+          const { data: updateData, error: updateError } = await supabase
             .from("user_profiles")
             .update({
               subscription_status: "canceled",
@@ -224,6 +254,13 @@ serve(async (req) => {
               updated_at: new Date().toISOString(),
             })
             .eq("user_id", userId);
+          if (updateError) {
+            console.error('Webhook: Error updating user_profiles for user:', userId, updateError);
+          } else {
+            console.log('Webhook: Successfully updated user_profiles for user:', userId, 'status: canceled', 'data:', updateData);
+          }
+        } else {
+          console.warn('Webhook: Could not resolve user id for customer.subscription.deleted event, customer:', customerId);
         }
         break;
       }
@@ -235,8 +272,9 @@ serve(async (req) => {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e) {
-    console.error("Webhook processing error", e);
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : "Unknown error during webhook processing.";
+    console.error("Webhook processing error", errorMessage);
     return new Response("Server error", { status: 500, headers: corsHeaders });
   }
 });

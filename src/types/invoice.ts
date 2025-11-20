@@ -22,6 +22,7 @@ export interface ClientInfo {
 
 export interface BankingInfo {
   bankName: string;
+  accountName: string;
   accountNumber: string;
   swiftCode: string;
   iban: string;

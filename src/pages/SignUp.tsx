@@ -66,8 +66,8 @@ const SignUp = () => {
 
       if (!response.success) {
         toast({
-          title: "Error",
-          description: response.message,
+          title: "Sign Up Error",
+          description: response.message || "An error occurred during sign up. Please try again.",
           variant: "destructive",
         });
         return;
@@ -77,11 +77,11 @@ const SignUp = () => {
       navigate("/signin");
     } catch (error: unknown) {
       toast({
-        title: "Error",
+        title: "Sign Up Error",
         description:
           error instanceof Error
             ? error.message
-            : "An unexpected error occurred. Please try again.",
+            : "An unexpected error occurred during sign up. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -94,15 +94,15 @@ const SignUp = () => {
     try {
       const response = await signInWithGoogle();
       if (!response.success) {
-        toast({ title: "Error", description: response.message, variant: "destructive" });
+        toast({ title: "Google Sign-In Error", description: response.message || "Failed to sign in with Google. Please try again.", variant: "destructive" });
       }
     } catch (error: unknown) {
       toast({
         title: "Error",
         description:
-          error instanceof Error
+        error instanceof Error
             ? error.message
-            : "An unexpected error occurred. Please try again.",
+            : "An unexpected error occurred during Google sign-in. Please try again.",
         variant: "destructive",
       });
     } finally {

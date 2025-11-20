@@ -14,7 +14,7 @@ const templateInfos: TemplateInfo[] = [
     name: "Modern",
     preview: "bg-gradient-to-br from-blue-50 to-indigo-100",
     isPremium: false,
-    index: 0, // Default free template
+    index: 0,
   },
   {
     id: InvoiceTemplate.MINIMAL,
@@ -27,7 +27,7 @@ const templateInfos: TemplateInfo[] = [
     id: InvoiceTemplate.CLASSIC,
     name: "Classic",
     preview: "bg-white border-2 border-gray-900",
-    isPremium: true, // Mark Classic as premium
+    isPremium: true,
     index: 2,
   },
   {
@@ -50,11 +50,11 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   selectedTemplate,
   onSelectTemplate,
 }) => {
-  const { effectivePlanLimits } = usePlanAccess(); // Destructure effectivePlanLimits
-  const canUsePremiumTemplates = effectivePlanLimits?.maxTemplates === Infinity || effectivePlanLimits?.maxTemplates > 1; // Logic for premium templates
+  const { effectivePlanLimits } = usePlanAccess();
+  const canUsePremiumTemplates = effectivePlanLimits?.maxTemplates === Infinity || effectivePlanLimits?.maxTemplates > 1;
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 w-full">
       {templateInfos.map((template) => {
         const isSelected = selectedTemplate === template.id;
         const isLocked = template.isPremium && !canUsePremiumTemplates;
@@ -62,21 +62,21 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         return (
           <div
             key={template.id}
-            className="cursor-pointer group relative"
+            className="cursor-pointer group relative w-full"
             onClick={() => onSelectTemplate(template)}
           >
             <div
-              className={`h-20 rounded-md ${template.preview} overflow-hidden border-2 transition-all ${
+              className={`relative h-20 rounded-md ${template.preview} overflow-hidden border-2 transition-all ${
                 isSelected
                   ? "border-primary ring-2 ring-primary/50"
                   : "border-border group-hover:border-muted-foreground"
               }`}
             >
               {/* Skeleton representation */}
-              <div className="absolute inset-2 space-y-1.5 opacity-60">
-                <div className="h-2 bg-gray-400/50 rounded w-1/2"></div>
-                <div className="h-1.5 bg-gray-400/30 rounded w-3/4"></div>
-                <div className="h-1.5 bg-gray-400/30 rounded w-1/3"></div>
+              <div className="absolute inset-2 space-y-1 sm:space-y-1.5 opacity-60">
+                <div className="h-1.5 sm:h-2 bg-gray-400/50 rounded w-1/2"></div>
+                <div className="h-1 sm:h-1.5 bg-gray-400/30 rounded w-3/4"></div>
+                <div className="h-1 sm:h-1.5 bg-gray-400/30 rounded w-1/3"></div>
               </div>
             </div>
 
@@ -87,14 +87,14 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             )}
 
             {isLocked && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 rounded-md">
-                    <Lock className="h-5 w-5 text-white/80" />
-                    <span className="text-xs font-bold text-white/90 mt-1">PRO</span>
-                </div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 rounded-md">
+                <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-white/80" />
+                <span className="text-[10px] sm:text-xs font-bold text-white/90 mt-0.5 sm:mt-1">PRO</span>
+              </div>
             )}
 
             <p
-              className={`text-center text-xs font-medium mt-1.5 transition-colors ${
+              className={`text-center text-[10px] sm:text-xs font-medium mt-1 sm:mt-1.5 transition-colors truncate ${
                 isSelected && !isLocked ? "text-primary" : "text-muted-foreground"
               }`}
             >

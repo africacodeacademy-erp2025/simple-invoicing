@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileText, Eye, Palette, Save, Printer } from "lucide-react"; // Import Printer icon
+import { Download, FileText, Eye, Palette, Save, Printer } from "lucide-react";
 import { InvoiceForm } from "@/components/InvoiceForm";
 import { InvoicePreview } from "@/components/InvoicePreview";
 import { TemplateSelector } from "@/components/TemplateSelector";
@@ -22,10 +22,10 @@ import { ModernTemplate } from "@/components/templates/ModernTemplate";
 import { CorporateTemplate } from "@/components/templates/CorporateTemplate";
 import { CreativeTemplate } from "@/components/templates/CreativeTemplate";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PlanAccessService, PlanTier } from "@/services/planAccess.service"; // Import PlanAccessService and PlanTier
+import { PlanAccessService, PlanTier } from "@/services/planAccess.service";
 
 const availableTemplates = [
-  { id: InvoiceTemplate.MODERN, name: "Modern", component: ModernTemplate, isPremium: false, index: 0 }, // Modern is the default free template
+  { id: InvoiceTemplate.MODERN, name: "Modern", component: ModernTemplate, isPremium: false, index: 0 },
   { id: InvoiceTemplate.MINIMAL, name: "Minimal", component: MinimalTemplate, isPremium: true, index: 1 },
   { id: InvoiceTemplate.CLASSIC, name: "Classic", component: ClassicTemplate, isPremium: true, index: 2 },
   { id: InvoiceTemplate.CORPORATE, name: "Corporate", component: CorporateTemplate, isPremium: true, index: 3 },
@@ -36,10 +36,8 @@ const CreateInvoice = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>(InvoiceTemplate.MODERN);
+  const [activeTab, setActiveTab] = useState('edit');
   const invoicePreviewRef = useRef<HTMLDivElement>(null);
-  // This ref will hold the DOM element of the InvoicePreview component
-  // which is rendered in the hidden div. This is used to ensure we capture
-  // the correct DOM after a template change.
   const capturedPreviewRef = useRef<HTMLDivElement | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
 
@@ -51,7 +49,7 @@ const CreateInvoice = () => {
   const { profile, profileLoading } = useProfile(user?.id || null);
   const navigate = useNavigate();
 
-  const { canExportPDF, canUseRecurring, maxTemplates, canUseAI } = usePlanAccess(); // Destructure directly from features
+  const { canExportPDF, canUseRecurring, maxTemplates, canUseAI } = usePlanAccess();
 
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     invoiceNumber: "",
@@ -62,7 +60,7 @@ const CreateInvoice = () => {
     recurringInterval: "monthly",
     businessInfo: { name: "", email: "", phone: "", address: "", logo: null },
     clientInfo: { name: "", email: "", address: "" },
-    bankingInfo: { bankName: "", accountNumber: "", swiftCode: "", iban: "" },
+    bankingInfo: { bankName: "", accountName: "", accountNumber: "", swiftCode: "", iban: "" },
     lineItems: [],
     taxRate: 0,
     discountRate: 0,
@@ -104,13 +102,17 @@ const CreateInvoice = () => {
   }, []);
 
   useEffect(() => {
-    // When selectedTemplate changes, update capturedPreviewRef to point to the new DOM element.
-    // This ensures that when generatePDF or handlePrintInvoice are called, they use the
-    // most up-to-date preview content.
+    if (profile?.logo_url && !invoiceData.businessInfo.logo) {
+      setInvoiceData((prev) => ({
+        ...prev,
+        businessInfo: { ...prev.businessInfo, logo: profile.logo_url },
+      }));
+    }
+
     if (invoicePreviewRef.current) {
       capturedPreviewRef.current = invoicePreviewRef.current;
     }
-  }, [selectedTemplate]); // Re-run this effect whenever selectedTemplate changes
+  }, [selectedTemplate]);
 
   const handleSelectTemplate = (template: TemplateInfo) => {
     setSelectedTemplate(template.id);
@@ -118,7 +120,6 @@ const CreateInvoice = () => {
 
   const handleGeneratePDF = async () => {
     const selectedTemplateInfo = availableTemplates.find(t => t.id === selectedTemplate);
-    // Check template access using the service directly or a more robust check from usePlanAccess
     const templateAccessCheck = await PlanAccessService.canUseTemplate(profile?.plan, selectedTemplateInfo?.index ?? 0);
     if (!templateAccessCheck.allowed) {
       toast({ title: "Premium Feature", description: templateAccessCheck.reason, variant: "destructive" });
@@ -128,21 +129,21 @@ const CreateInvoice = () => {
       return;
     }
 
-    if (!canExportPDF) { // Use canExportPDF directly
+    if (!canExportPDF) {
       toast({ title: "Premium Feature", description: "PDF export requires Pro plan", variant: "destructive" });
       setPaywallFeature("PDF Export");
       setPaywallPlan("pro");
       setShowPaywall(true);
       return;
     }
-    // Use capturedPreviewRef.current instead of invoicePreviewRef.current
+
     if (!capturedPreviewRef.current || !invoiceData.businessInfo.name || !invoiceData.clientInfo.name) {
-      toast({ title: "Error", description: "Invoice data incomplete.", variant: "destructive" });
+      toast({ title: "Error", description: "Invoice data incomplete. Please fill in all required fields.", variant: "destructive" });
       return;
     }
     setIsGenerating(true);
     try {
-      await generatePDF(capturedPreviewRef.current, invoiceData); // Use the captured ref
+      await generatePDF(capturedPreviewRef.current, invoiceData);
       toast({ title: "Success!", description: "Invoice PDF downloaded." });
     } catch (error) {
       console.error(error);
@@ -168,7 +169,7 @@ const CreateInvoice = () => {
       return;
     }
 
-    if (invoiceData.isRecurring && !canUseRecurring) { // Use canUseRecurring directly
+    if (invoiceData.isRecurring && !canUseRecurring) {
       toast({ title: "Premium Feature", description: "Recurring invoices require Pro plan", variant: "destructive" });
       setPaywallFeature("Recurring Invoices");
       setPaywallPlan("pro");
@@ -191,11 +192,10 @@ const CreateInvoice = () => {
 
     setIsSaving(true);
     try {
-      // Use the ProtectedInvoiceController to ensure all access checks are performed
       const response = await ProtectedInvoiceController.createInvoice(user.id, {
         ...invoiceData,
         template: selectedTemplate,
-        userPlan: profile?.plan, // Pass the user's plan for checks
+        userPlan: profile?.plan,
       });
 
       if (response.success) {
@@ -203,11 +203,11 @@ const CreateInvoice = () => {
         const savedInvoiceId = Array.isArray(response.data) ? response.data[0]?.id : response.data?.id;
         if (savedInvoiceId) navigate(`/app/view-invoice/${savedInvoiceId}`);
       } else {
-        toast({ title: "Error", description: response.error || "Failed to create invoice.", variant: "destructive" });
+        toast({ title: "Error", description: response.error || "Failed to create invoice. Please try again.", variant: "destructive" });
       }
     } catch (error) {
       console.error(error);
-      toast({ title: "Error", description: "Failed to save invoice.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to save invoice. Please try again.", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
@@ -216,14 +216,12 @@ const CreateInvoice = () => {
   const SelectedTemplateComponent = availableTemplates.find(t => t.id === selectedTemplate)?.component || ModernTemplate;
 
   const handlePrintInvoice = () => {
-    // Use capturedPreviewRef.current instead of invoicePreviewRef.current
     const invoiceContent = capturedPreviewRef.current;
     if (!invoiceContent) {
       toast({ title: "Error", description: "Invoice preview not found.", variant: "destructive" });
       return;
     }
 
-    // Create a temporary iframe
     const iframe = document.createElement('iframe');
     iframe.style.height = '0';
     iframe.style.width = '0';
@@ -238,13 +236,11 @@ const CreateInvoice = () => {
       return;
     }
 
-    // Write the basic HTML structure
     iframeDoc.write(`
       <html>
         <head>
           <title>Print Invoice</title>
           <style>
-            /* Basic print styles */
             @media print {
               body { margin: 0; }
             }
@@ -257,17 +253,15 @@ const CreateInvoice = () => {
     `);
     iframeDoc.close();
 
-    // Wait for the iframe to load its content before trying to copy styles
     iframe.onload = () => {
       const iframeHead = iframe.contentWindow?.document.head;
       if (iframeHead) {
-        // Copy all stylesheets from the parent document to the iframe
         Array.from(document.styleSheets).forEach(styleSheet => {
           if (styleSheet.cssRules) {
             const styleEl = document.createElement('style');
             styleEl.textContent = Array.from(styleSheet.cssRules).map(rule => rule.cssText).join('\n');
             iframeHead.appendChild(styleEl);
-          } else if (styleSheet.href) { // For external stylesheets, try to link them
+          } else if (styleSheet.href) {
             const linkEl = document.createElement('link');
             linkEl.rel = 'stylesheet';
             linkEl.href = styleSheet.href;
@@ -280,10 +274,9 @@ const CreateInvoice = () => {
       if (iframeWindow) {
         iframeWindow.focus();
         iframeWindow.print();
-        // Clean up the iframe after printing
         setTimeout(() => {
           document.body.removeChild(iframe);
-        }, 1000); // Give some time for the print dialog to appear
+        }, 1000);
       } else {
         toast({ title: "Error", description: "Could not access iframe window.", variant: "destructive" });
         document.body.removeChild(iframe);
@@ -292,8 +285,8 @@ const CreateInvoice = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="p-6 flex flex-col h-full">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Create Invoice</h1>
           <p className="text-muted-foreground mt-1">Create professional invoices in minutes</p>
@@ -318,8 +311,25 @@ const CreateInvoice = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-        <div className="lg:col-span-3 space-y-6">
+      <div className="lg:hidden mb-4 border-b">
+        <div className="flex">
+          <button
+            className={`px-4 py-2 text-sm font-medium ${activeTab === 'edit' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+            onClick={() => setActiveTab('edit')}
+          >
+            Edit
+          </button>
+          <button
+            className={`px-4 py-2 text-sm font-medium ${activeTab === 'preview' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground'}`}
+            onClick={() => setActiveTab('preview')}
+          >
+            Preview
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 flex-1 overflow-hidden">
+        <div className={`lg:col-span-3 space-y-6 ${activeTab !== 'edit' && 'hidden'} lg:block overflow-y-auto pr-4`}>
           <div className="flex items-center gap-3">
             <FileText className="h-6 w-6 text-primary"/>
             <h2 className="text-2xl font-semibold">Invoice Details</h2>
@@ -328,8 +338,8 @@ const CreateInvoice = () => {
           <InvoiceForm invoiceData={invoiceData} onUpdateInvoiceData={handleUpdateInvoiceData} userId={user?.id} profile={profile}/>
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
-          <div className="sticky top-6 space-y-6">
+        <div className={`lg:col-span-2 space-y-6 ${activeTab !== 'preview' && 'hidden'} lg:block`}>
+          <div className="space-y-6">
             <Card>
               <CardHeader className="p-4">
                 <CardTitle className="flex items-center gap-3">
@@ -339,15 +349,13 @@ const CreateInvoice = () => {
               </CardHeader>
               <CardContent className="p-0">
                 <div
-                    className="h-[420px] bg-gray-100 dark:bg-gray-800 rounded-b-lg overflow-hidden relative group cursor-pointer"
+                    className="h-[550px] bg-gray-100 dark:bg-gray-800 rounded-b-lg overflow-y-auto relative group cursor-pointer border"
                     onClick={() => setIsPreviewModalOpen(true)}
                 >
-                    <div className="absolute top-1/2 left-1/2 pointer-events-none transform -translate-x-1/2 -translate-y-1/2 scale-[0.5] origin-center">
-                        <div className="w-[800px] bg-white shadow-2xl">
-                            <SelectedTemplateComponent invoiceData={invoiceData} />
-                        </div>
+                    <div className="bg-white shadow-2xl w-full">
+                        <SelectedTemplateComponent invoiceData={invoiceData} />
                     </div>
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
                         <div className="text-white font-semibold flex items-center gap-2 bg-gray-900/50 px-4 py-2 rounded-lg">
                             <Eye className="h-5 w-5" />
                             View Full Preview
@@ -373,15 +381,17 @@ const CreateInvoice = () => {
       </div>
 
       <Dialog open={isPreviewModalOpen} onOpenChange={setIsPreviewModalOpen}>
-        <DialogContent className="max-w-4xl h-[90vh] p-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl h-[90vh] p-0">
             <DialogHeader className="p-4 border-b">
                 <DialogTitle>Invoice Preview</DialogTitle>
             </DialogHeader>
-            <div className="h-full overflow-y-auto bg-gray-200 p-8">
-                <InvoicePreview
-                    invoiceData={invoiceData}
-                    template={selectedTemplate}
-                />
+            <div className="h-full overflow-y-auto bg-gray-200 p-4 sm:p-8">
+                <div className="mx-auto max-w-full sm:max-w-[800px]">
+                    <InvoicePreview
+                        invoiceData={invoiceData}
+                        template={selectedTemplate}
+                    />
+                </div>
             </div>
         </DialogContent>
       </Dialog>

@@ -831,4 +831,6 @@ export class PDFGeneratorService {
         return baseData;
     }
   }
+
+  // DOCX generation has been moved to `TemplateService` (uses `docx` library)
 }

@@ -3,7 +3,8 @@ export enum InvoiceTemplate {
   CLASSIC = 'classic', 
   MINIMAL = 'minimal',
   CREATIVE = 'creative',
-  CORPORATE = 'corporate'
+  CORPORATE = 'corporate',
+  XERO = 'xero'
 }
 
 export interface TemplateInfo {
@@ -13,4 +14,5 @@ export interface TemplateInfo {
   preview: string;
   isPremium: boolean; // Added isPremium property
   index: number; // Added index property for ordering and limits
+  wordDocPath?: string; // Path to the downloadable Word document
 }

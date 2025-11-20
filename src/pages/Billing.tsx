@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PricingPlans from "@/components/PricingPlans";
@@ -8,7 +9,7 @@ import { useLocation } from "react-router-dom";
 
 export default function Billing() {
   const { user } = useAuth();
-  const { profile } = useProfile(user?.id ?? null);
+  const { profile, refreshProfile } = useProfile(user?.id ?? null);
   const { toast } = useToast();
   const location = useLocation();
 
@@ -19,6 +20,7 @@ export default function Billing() {
         title: "Subscription updated!",
         description: "Your plan has been successfully updated.",
       });
+      refreshProfile(); 
     }
     if (query.get("checkout") === "cancel") {
       toast({
@@ -27,7 +29,10 @@ export default function Billing() {
         variant: "destructive",
       });
     }
-  }, [location.search, toast]);
+    if (query.get("from_stripe") === "true") {
+      refreshProfile();
+    }
+  }, [location.search, toast, refreshProfile]);
 
   return (
     <div className="space-y-6">
@@ -37,22 +42,22 @@ export default function Billing() {
       </div>
 
       <Card className="shadow-soft">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Current Plan</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div>
-              <div className="text-muted-foreground">Plan</div>
-              <div className="font-medium capitalize">{profile?.plan || "free"}</div>
+        <CardContent className="p-0">
+          <div className="grid grid-cols-1 divide-y divide-border md:grid-cols-3 md:divide-y-0 md:divide-x">
+            <div className="p-4 flex flex-row items-center justify-between md:flex-col md:items-start md:gap-1">
+              <p className="text-sm text-muted-foreground">Plan</p>
+              <p className="font-semibold capitalize">{profile?.plan || "free"}</p>
             </div>
-            <div>
-              <div className="text-muted-foreground">Status</div>
-              <div className="font-medium">{profile?.subscription_status || "—"}</div>
+            <div className="p-4 flex flex-row items-center justify-between md:flex-col md:items-start md:gap-1">
+              <p className="text-sm text-muted-foreground">Status</p>
+              <p className="font-semibold capitalize">{profile?.subscription_status || "—"}</p>
             </div>
-            <div>
-              <div className="text-muted-foreground">Renews</div>
-              <div className="font-medium">{profile?.current_period_end ? new Date(profile.current_period_end).toLocaleString() : "—"}</div>
+            <div className="p-4 flex flex-row items-center justify-between md:flex-col md:items-start md:gap-1">
+              <p className="text-sm text-muted-foreground">Renews</p>
+              <p className="font-semibold">{profile?.current_period_end ? new Date(profile.current_period_end).toLocaleDateString() : "—"}</p>
             </div>
           </div>
         </CardContent>

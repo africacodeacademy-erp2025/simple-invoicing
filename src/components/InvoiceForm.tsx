@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash2, Upload, Sparkles, UserPlus } from "lucide-react";
+import { Plus, Trash2, Upload, Sparkles, UserPlus, ArrowLeft, ArrowRight } from "lucide-react";
 import { InvoiceData, LineItem, currencies } from "@/types/invoice";
 import { toast } from "@/hooks/use-toast";
 import { ClientService, Client } from "@/services/client.service";
@@ -57,6 +57,15 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   userId,
   profile,
 }) => {
+  const steps = [
+    "AI Generator",
+    "From & To",
+    "Invoice Details",
+    "Line Items",
+    "Payment Info",
+    "Summary",
+  ];
+  const [currentStep, setCurrentStep] = useState<number>(0);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiGenerating, setAiGenerating] = useState(false);
@@ -147,6 +156,70 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const selectedCurrency = currencies.find(
     (c) => c.code === invoiceData.currency
   );
+
+  const formatNumberForInput = (value: number) =>
+    (typeof value === "number" && !isNaN(value)
+      ? value
+      : 0
+    ).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const formatAmountDisplay = (amount: number) => {
+    const value = typeof amount === "number" && !isNaN(amount) ? amount : 0;
+    return `${selectedCurrency?.symbol || "$"}${value.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
+  // Keep a preview URL in state and initialize it from invoiceData or profile
+  useEffect(() => {
+    const logo = invoiceData.businessInfo.logo;
+    if (logo) {
+      if (typeof logo === "string") {
+        setLogoPreview(logo);
+      } else if (logo instanceof File) {
+        const reader = new FileReader();
+        reader.onload = (e) => setLogoPreview(e.target?.result as string);
+        reader.readAsDataURL(logo);
+      } else {
+        setLogoPreview(null);
+      }
+    } else if (profile?.logo_url) {
+      setLogoPreview(profile.logo_url);
+    } else {
+      setLogoPreview(null);
+    }
+  }, [invoiceData.businessInfo.logo, profile?.logo_url]);
+
+  const goToStep = (i: number) => setCurrentStep(i);
+
+  const nextStep = () => {
+    // Basic per-step validation before moving forward
+    if (currentStep === 0) {
+      if (!invoiceData.businessInfo.name || !invoiceData.clientInfo.name) {
+        toast({ title: "Missing fields", description: "Please fill business and client name before continuing.", variant: "destructive" });
+        return;
+      }
+    }
+
+    if (currentStep === 1) {
+      if (!invoiceData.invoiceNumber || !invoiceData.date || !invoiceData.dueDate) {
+        toast({ title: "Missing fields", description: "Please fill invoice number and dates.", variant: "destructive" });
+        return;
+      }
+    }
+
+    if (currentStep === 2) {
+      if (!invoiceData.lineItems || invoiceData.lineItems.length === 0) {
+        toast({ title: "No items", description: "Add at least one line item before continuing.", variant: "destructive" });
+        return;
+      }
+    }
+
+    setCurrentStep((s) => Math.min(s + 1, steps.length - 1));
+  };
+
+  const prevStep = () => setCurrentStep((s) => Math.max(s - 1, 0));
 
   // Check if profile is complete (has essential business information)
   const isProfileComplete =
@@ -286,201 +359,234 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* AI Invoice Generator */}
-      <Card
-        className={`shadow-soft border-primary/20 bg-gradient-to-br from-primary/5 to-transparent transition-all duration-500 ${
-          aiGenerating ? "ring-2 ring-primary/30 shadow-lg scale-[1.02]" : ""
-        }`}
-      >
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold flex items-center gap-3">
-            <div className="relative">
-              <Sparkles
-                className={`h-5 w-5 text-primary transition-all duration-300 ${
-                  aiGenerating ? "animate-pulse" : ""
-                }`}
-              />
+      {/* Stepper navigation */}
+      <div className="mb-4">
+        <div className="flex flex-wrap gap-2">
+          {steps.map((label, i) => (
+            <Button
+              key={i}
+              type="button"
+              onClick={() => goToStep(i)}
+              variant={currentStep === i ? "default" : "ghost"}
+              size="sm"
+              className={
+                currentStep === i
+                  ? "font-semibold shadow-md border border-primary"
+                  : "font-normal text-muted-foreground"
+              }
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+      </div>
+      {/* Step 0: AI Invoice Generator */}
+      {currentStep === 0 && (
+        <Card className={`shadow-soft border-primary/20 bg-gradient-to-br from-primary/5 to-transparent transition-all duration-500 ${aiGenerating ? "ring-2 ring-primary/30 shadow-lg scale-[1.02]" : ""}`}>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold flex items-center gap-3">
+              <div className="relative">
+                <Sparkles className={`h-5 w-5 text-primary transition-all duration-300 ${aiGenerating ? "animate-pulse" : ""}`} />
+                {aiGenerating && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-ping" />
+                )}
+              </div>
+              <span className={aiGenerating ? "animate-pulse" : ""}>AI Invoice Generator</span>
               {aiGenerating && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-ping" />
+                <div className="flex items-center gap-1 ml-auto">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
               )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="aiPrompt" className="flex items-center gap-2">
+                Describe your invoice
+                {aiGenerating && (
+                  <span className="text-xs text-primary font-medium animate-pulse">AI is analyzing...</span>
+                )}
+              </Label>
+              <div className="relative">
+                <Textarea
+                  id="aiPrompt"
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  placeholder="Example: Create an invoice for web design services for Acme Corp. 3 pages at $500 each, logo design for $300, 10% tax, due in 30 days. Client is John Smith at john@acme.com, 123 Business St, New York..."
+                  className={`min-h-[100px] transition-all duration-300 ${aiGenerating ? "ring-2 ring-primary/20 bg-primary/5" : ""}`}
+                  disabled={aiGenerating}
+                />
+                {aiGenerating && (
+                  <div className="absolute top-2 right-2">
+                    <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  </div>
+                )}
+              </div>
             </div>
-            <span className={aiGenerating ? "animate-pulse" : ""}>
-              AI Invoice Generator
-            </span>
+
+            <Button
+              onClick={handleAIGenerate}
+              disabled={!aiPrompt.trim() || aiGenerating}
+              className={`w-full transition-all duration-300 ${aiGenerating ? "bg-primary/80 cursor-not-allowed" : "bg-primary-gradient hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"}`}
+            >
+              {aiGenerating ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="relative">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-background border-t-transparent" />
+                    <div className="absolute inset-0 animate-ping rounded-full h-4 w-4 border border-primary/30" />
+                  </div>
+                  <span className="animate-pulse">AI is working...</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  <span>Generate Invoice with AI</span>
+                </div>
+              )}
+            </Button>
+
             {aiGenerating && (
-              <div className="flex items-center gap-1 ml-auto">
-                <div
-                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                />
-                <div
-                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                  style={{ animationDelay: "150ms" }}
-                />
-                <div
-                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                  style={{ animationDelay: "300ms" }}
-                />
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 animate-fadeIn">
+                <div className="flex items-center gap-2 text-sm text-primary">
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                  <span className="font-medium">AI is processing your request...</span>
+                </div>
+                <div className="mt-2 text-xs text-primary/70">This may take a few moments while we generate your professional invoice.</div>
               </div>
             )}
-          </CardTitle>
+
+            <div className={`text-xs text-muted-foreground transition-opacity duration-300 ${aiGenerating ? "opacity-50" : "opacity-100"}`}>
+              <p className="font-medium mb-1">💡 Tips for better results:</p>
+              <ul className="space-y-1 ml-4">
+                <li>• Mention client name</li>
+                <li>• Describe services/products with quantities and rates</li>
+                <li>• Include tax rates, discounts, and payment terms</li>
+                <li>• Specify currency if not USD</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {currentStep === 1 && (
+      <Card className="shadow-soft">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Business Information</CardTitle>
+          {isProfileComplete && (
+            <p className="text-sm text-muted-foreground">
+              Your business information is complete. You can change the logo below.
+            </p>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="aiPrompt" className="flex items-center gap-2">
-              Describe your invoice
-              {aiGenerating && (
-                <span className="text-xs text-primary font-medium animate-pulse">
-                  AI is analyzing...
-                </span>
-              )}
-            </Label>
-            <div className="relative">
-              <Textarea
-                id="aiPrompt"
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-                placeholder="Example: Create an invoice for web design services for Acme Corp. 3 pages at $500 each, logo design for $300, 10% tax, due in 30 days. Client is John Smith at john@acme.com, 123 Business St, New York..."
-                className={`min-h-[100px] transition-all duration-300 ${
-                  aiGenerating ? "ring-2 ring-primary/20 bg-primary/5" : ""
-                }`}
-                disabled={aiGenerating}
-              />
-              {aiGenerating && (
-                <div className="absolute top-2 right-2">
-                  <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <Button
-            onClick={handleAIGenerate}
-            disabled={!aiPrompt.trim() || aiGenerating}
-            className={`w-full transition-all duration-300 ${
-              aiGenerating
-                ? "bg-primary/80 cursor-not-allowed"
-                : "bg-primary-gradient hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
-            }`}
-          >
-            {aiGenerating ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="relative">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-background border-t-transparent" />
-                  <div className="absolute inset-0 animate-ping rounded-full h-4 w-4 border border-primary/30" />
-                </div>
-                <span className="animate-pulse">AI is working...</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                <span>Generate Invoice with AI</span>
-              </div>
-            )}
-          </Button>
-
-          {aiGenerating && (
-            <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 animate-fadeIn">
-              <div className="flex items-center gap-2 text-sm text-primary">
-                <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                <span className="font-medium">
-                  AI is processing your request...
-                </span>
-              </div>
-              <div className="mt-2 text-xs text-primary/70">
-                This may take a few moments while we generate your professional
-                invoice.
-              </div>
-            </div>
-          )}
-
-          <div
-            className={`text-xs text-muted-foreground transition-opacity duration-300 ${
-              aiGenerating ? "opacity-50" : "opacity-100"
-            }`}
-          >
-            <p className="font-medium mb-1">💡 Tips for better results:</p>
-            <ul className="space-y-1 ml-4">
-              <li>• Mention client name</li>
-              <li>• Describe services/products with quantities and rates</li>
-              <li>• Include tax rates, discounts, and payment terms</li>
-              <li>• Specify currency if not USD</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Business Information - Only show if profile is incomplete or no logo */}
-      {(!isProfileComplete || !hasProfileLogo) && (
-        <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">
-              {isProfileComplete ? "Company Logo" : "Business Information"}
-            </CardTitle>
-            {isProfileComplete && (
-              <p className="text-sm text-muted-foreground">
-                Your business information is complete. You can only update your
-                logo here.
-              </p>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Logo Upload - Always show if no profile logo */}
-            {!hasProfileLogo && (
-              <div className="space-y-2">
-                <Label htmlFor="logo">Company Logo</Label>
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <Input
-                      id="logo"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                      className="sr-only"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById("logo")?.click()}
-                      className="flex items-center gap-2"
-                    >
-                      <Upload className="h-4 w-4" />
-                      Upload Logo
-                    </Button>
-                  </div>
-                  {logoPreview && (
-                    <div className="w-16 h-16 rounded-lg overflow-hidden border shadow-soft">
-                      <img
-                        src={logoPreview}
-                        alt="Logo preview"
-                        className="w-full h-full object-contain bg-background"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Business Information Fields - Only show if profile is incomplete */}
-            {!isProfileComplete && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="businessName">Business Name</Label>
-                  <Input
-                    id="businessName"
-                    value={invoiceData.businessInfo.name}
-                    onChange={(e) =>
+            <Label htmlFor="logo">Company Logo</Label>
+            <div className="flex items-center gap-4">
+              <div className="relative flex items-center gap-2">
+                <Input
+                  id="logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="sr-only"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById("logo")?.click()}
+                  className="flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload Logo
+                </Button>
+                {logoPreview && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      setLogoPreview(null);
                       onUpdateInvoiceData({
                         ...invoiceData,
-                        businessInfo: {
-                          ...invoiceData.businessInfo,
-                          name: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="Your Business Name"
+                        businessInfo: { ...invoiceData.businessInfo, logo: null },
+                      });
+                    }}
+                    className="text-sm"
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+              {logoPreview && (
+                <div className="w-16 h-16 rounded-lg overflow-hidden border shadow-soft">
+                  <img
+                    src={logoPreview}
+                    alt="Logo preview"
+                    className="w-full h-full object-contain bg-background"
                   />
                 </div>
+              )}
+            </div>
+          </div>
+
+          {/* Business Information Fields - Only show if profile is incomplete */}
+          {!isProfileComplete && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="businessName">Business Name</Label>
+                <Input
+                  id="businessName"
+                  value={invoiceData.businessInfo.name}
+                  onChange={(e) =>
+                    onUpdateInvoiceData({
+                      ...invoiceData,
+                      businessInfo: {
+                        ...invoiceData.businessInfo,
+                        name: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="Your Business Name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="businessEmail">Email</Label>
+                <Input
+                  id="businessEmail"
+                  type="email"
+                  value={invoiceData.businessInfo.email}
+                  onChange={(e) =>
+                    onUpdateInvoiceData({
+                      ...invoiceData,
+                      businessInfo: {
+                        ...invoiceData.businessInfo,
+                        email: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="business@example.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="businessPhone">Phone</Label>
+                <Input
+                  id="businessPhone"
+                  value={invoiceData.businessInfo.phone}
+                  onChange={(e) =>
+                    onUpdateInvoiceData({
+                      ...invoiceData,
+                      businessInfo: {
+                        ...invoiceData.businessInfo,
+                        phone: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="+1 (555) 123-4567"
+                />
+              </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="businessEmail">Email</Label>
@@ -534,15 +640,18 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                       })
                     }
                     placeholder="123 Business St, City, State 12345"
-                    className="min-h-[80px]"
+                    className="min-h-[60px]"
                   />
                 </div>
               </div>
-            )}
-          </CardContent>
+            </div>
+          )}
+        </CardContent>
         </Card>
       )}
 
+      {currentStep === 0 && (
+      <>
       {/* Client Information */}
       <Card className="shadow-soft">
         <CardHeader>
@@ -675,29 +784,32 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 placeholder="client@example.com"
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="clientAddress">Client Address</Label>
-            <Textarea
-              id="clientAddress"
-              value={invoiceData.clientInfo.address}
-              onChange={(e) =>
-                onUpdateInvoiceData({
-                  ...invoiceData,
-                  clientInfo: {
-                    ...invoiceData.clientInfo,
-                    address: e.target.value,
-                  },
-                })
-              }
-              placeholder="123 Client St, City, State 12345"
-              className="min-h-[80px]"
-            />
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="clientAddress">Client Address</Label>
+              <Textarea
+                id="clientAddress"
+                value={invoiceData.clientInfo.address}
+                onChange={(e) =>
+                  onUpdateInvoiceData({
+                    ...invoiceData,
+                    clientInfo: {
+                      ...invoiceData.clientInfo,
+                      address: e.target.value,
+                    },
+                  })
+                }
+                placeholder="123 Client St, City, State 12345"
+                className="min-h-[60px]"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
+      </>
+      )}
 
+      {currentStep === 1 && (
+      <>
       {/* Invoice Details */}
       <Card className="shadow-soft">
         <CardHeader>
@@ -705,8 +817,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             Invoice Details
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="invoiceNumber">Invoice Number</Label>
               <Input
@@ -720,6 +832,30 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 }
                 placeholder="INV-001"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="currency">Currency</Label>
+              <Select
+                value={invoiceData.currency}
+                onValueChange={(value) =>
+                  onUpdateInvoiceData({
+                    ...invoiceData,
+                    currency: value,
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies.map((currency) => (
+                    <SelectItem key={currency.code} value={currency.code}>
+                      {currency.symbol} - {currency.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -752,31 +888,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
               />
             </div>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="currency">Currency</Label>
-            <Select
-              value={invoiceData.currency}
-              onValueChange={(value) =>
-                onUpdateInvoiceData({
-                  ...invoiceData,
-                  currency: value,
-                })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {currencies.map((currency) => (
-                  <SelectItem key={currency.code} value={currency.code}>
-                    {currency.symbol} - {currency.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </CardContent>
+
       </Card>
 
       {/* Recurring Invoice */}
@@ -857,8 +970,11 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
           )}
         </CardContent>
       </Card>
+      </>
+      )}
 
       {/* Line Items */}
+      {currentStep === 2 && (
       <Card className="shadow-soft">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-semibold">Line Items</CardTitle>
@@ -874,77 +990,83 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {invoiceData.lineItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border rounded-lg"
-                >
-                  <div className="md:col-span-4 space-y-2">
-                    <Label>Description</Label>
+              {invoiceData.lineItems.map((item, index) => (
+                <div key={item.id} className="p-3 border rounded-lg space-y-3">
+                  <div className="flex justify-between items-center">
+                    <Label className="text-sm font-medium">Item {index + 1}</Label>
+                    <Button
+                      onClick={() => removeLineItem(item.id)}
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`description-${item.id}`}>Description</Label>
                     <Textarea
+                      id={`description-${item.id}`}
                       value={item.description}
                       onChange={(e) =>
                         updateLineItem(item.id, "description", e.target.value)
                       }
                       placeholder="Service or product description"
-                      className="min-h-[60px]"
+                      className="min-h-[40px]"
+                      rows={1}
                     />
                   </div>
-
-                  <div className="md:col-span-2 space-y-2">
-                    <Label>Quantity</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={item.quantity}
-                      onChange={(e) =>
-                        updateLineItem(
-                          item.id,
-                          "quantity",
-                          parseInt(e.target.value) || 1
-                        )
-                      }
-                      className="text-center"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2 space-y-2">
-                    <Label>Rate ({selectedCurrency?.symbol})</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={item.rate}
-                      onChange={(e) =>
-                        updateLineItem(
-                          item.id,
-                          "rate",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                    />
-                  </div>
-
-                  <div className="md:col-span-3 space-y-2">
-                    <Label>Amount</Label>
-                    <div className="h-9 px-3 py-2 bg-muted rounded-md flex items-center text-sm overflow-hidden">
-                      <span className="truncate">
-                        {selectedCurrency?.symbol}
-                        {item.amount.toFixed(2)}
-                      </span>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
+                      <Input
+                        id={`quantity-${item.id}`}
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={item.quantity}
+                        onChange={(e) =>
+                          updateLineItem(
+                            item.id,
+                            "quantity",
+                            parseInt(e.target.value) || 1
+                          )
+                        }
+                        className="text-center"
+                      />
                     </div>
-                  </div>
-
-                  <div className="md:col-span-1 flex items-center justify-center">
-                    <Button
-                      onClick={() => removeLineItem(item.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="space-y-2">
+                      <Label htmlFor={`rate-${item.id}`}>Rate</Label>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground text-sm">
+                          {selectedCurrency?.symbol}
+                        </span>
+                        <Input
+                          id={`rate-${item.id}`}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.rate}
+                          onChange={(e) =>
+                            updateLineItem(
+                              item.id,
+                              "rate",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          className="pl-7"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Amount</Label>
+                      <div className="h-9 px-3 py-2 bg-muted rounded-md flex items-center text-sm overflow-hidden">
+                        <span className="truncate">
+                          {selectedCurrency?.symbol}
+                          {item.amount.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -952,7 +1074,154 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
           )}
         </CardContent>
       </Card>
+      )}
 
+      {currentStep === 3 && (
+      <Card className="shadow-soft">
+        <CardHeader>
+          <CardTitle className="text-lg font-bold">Payment Information:</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            This information will be included in your invoices for international
+            client payments. If you provide any banking information, the
+            relevant fields become required.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="bankName">Bank Name:</Label>
+              <Input
+                id="bankName"
+                value={invoiceData.bankingInfo.bankName}
+                onChange={(e) =>
+                  onUpdateInvoiceData({
+                    ...invoiceData,
+                    bankingInfo: {
+                      ...invoiceData.bankingInfo,
+                      bankName: e.target.value,
+                    },
+                  })
+                }
+                placeholder="Bank Name"
+              />
+              {!invoiceData.bankingInfo.bankName && (
+                <p className="text-xs text-red-500">Must be at least 1 character</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Notes */}
+      <Card className="shadow-soft">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Notes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="notes">Additional Notes</Label>
+            <Textarea
+              id="notes"
+              value={invoiceData.notes}
+              onChange={(e) =>
+                onUpdateInvoiceData({
+                  ...invoiceData,
+                  notes: e.target.value,
+                })
+              }
+              placeholder="Thank you for your business!"
+              className="min-h-[60px]"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+            <div className="space-y-2">
+              <Label htmlFor="accountName">Account Name:</Label>
+              <Input
+                id="accountName"
+                value={invoiceData.bankingInfo.accountName}
+                onChange={(e) =>
+                  onUpdateInvoiceData({
+                    ...invoiceData,
+                    bankingInfo: {
+                      ...invoiceData.bankingInfo,
+                      accountName: e.target.value,
+                    },
+                  })
+                }
+                placeholder="Account Name"
+              />
+              {!invoiceData.bankingInfo.accountName && (
+                <p className="text-xs text-red-500">Must be at least 1 character</p>
+              )}
+            </div>
+
+            <div className="md:col-span-2 space-y-2">
+              <Label htmlFor="accountNumber">Account Number:</Label>
+              <Input
+                id="accountNumber"
+                value={invoiceData.bankingInfo.accountNumber}
+                onChange={(e) =>
+                  onUpdateInvoiceData({
+                    ...invoiceData,
+                    bankingInfo: {
+                      ...invoiceData.bankingInfo,
+                      accountNumber: e.target.value,
+                    },
+                  })
+                }
+                placeholder="Account Number"
+              />
+              {!invoiceData.bankingInfo.accountNumber && (
+                <p className="text-xs text-red-500">Must be at least 1 character</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="swiftCode">SWIFT Code</Label>
+              <Input
+                id="swiftCode"
+                value={invoiceData.bankingInfo.swiftCode}
+                onChange={(e) =>
+                  onUpdateInvoiceData({
+                    ...invoiceData,
+                    bankingInfo: {
+                      ...invoiceData.bankingInfo,
+                      swiftCode: e.target.value,
+                    },
+                  })
+                }
+                placeholder="BOFAUS3N"
+                className="uppercase"
+              />
+              <p className="text-xs text-muted-foreground">8-11 character code for international wire transfers</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="iban">IBAN (International)</Label>
+              <Input
+                id="iban"
+                value={invoiceData.bankingInfo.iban}
+                onChange={(e) =>
+                  onUpdateInvoiceData({
+                    ...invoiceData,
+                    bankingInfo: {
+                      ...invoiceData.bankingInfo,
+                      iban: e.target.value,
+                    },
+                  })
+                }
+                placeholder="GB29 NWBK 6016 1331 9268 19"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      )}
+
+      {currentStep === 4 && (
+      <>
       {/* Tax & Discount */}
       <Card className="shadow-soft">
         <CardHeader>
@@ -1026,130 +1295,21 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
           </div>
         </CardContent>
       </Card>
+      </>
+      )}
 
-      {/* Banking Information */}
-      <Card className="shadow-soft">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            Banking Information
-            <span className="text-sm font-normal text-muted-foreground">
-              (Optional)
-            </span>
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            This information will be included in your invoices for international
-            client payments. If you provide any banking information, all three
-            fields (bank name, account number, and SWIFT code) become required.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="bankName">Bank Name</Label>
-              <Input
-                id="bankName"
-                value={invoiceData.bankingInfo.bankName}
-                onChange={(e) =>
-                  onUpdateInvoiceData({
-                    ...invoiceData,
-                    bankingInfo: {
-                      ...invoiceData.bankingInfo,
-                      bankName: e.target.value,
-                    },
-                  })
-                }
-                placeholder="Bank Name"
-              />
-            </div>
+      <div className="flex items-center justify-end gap-3 mt-4">
+        <Button variant="outline" onClick={prevStep} className="flex items-center gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
 
-            <div className="space-y-2">
-              <Label htmlFor="accountNumber">
-                Account Number
-                {(invoiceData.bankingInfo.bankName ||
-                  invoiceData.bankingInfo.accountNumber ||
-                  invoiceData.bankingInfo.swiftCode) && (
-                  <span className="text-red-500"> *</span>
-                )}
-              </Label>
-              <Input
-                id="accountNumber"
-                value={invoiceData.bankingInfo.accountNumber}
-                onChange={(e) =>
-                  onUpdateInvoiceData({
-                    ...invoiceData,
-                    bankingInfo: {
-                      ...invoiceData.bankingInfo,
-                      accountNumber: e.target.value,
-                    },
-                  })
-                }
-                placeholder="1234567890"
-              />
-              {(invoiceData.bankingInfo.bankName ||
-                invoiceData.bankingInfo.accountNumber ||
-                invoiceData.bankingInfo.swiftCode) && (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  Required when providing banking information
-                </p>
-              )}
-            </div>
+        <Button onClick={nextStep} className="flex items-center gap-2 bg-primary">
+          Next
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="swiftCode">
-                SWIFT Code
-                {(invoiceData.bankingInfo.bankName ||
-                  invoiceData.bankingInfo.accountNumber ||
-                  invoiceData.bankingInfo.swiftCode) && (
-                  <span className="text-red-500"> *</span>
-                )}
-              </Label>
-              <Input
-                id="swiftCode"
-                value={invoiceData.bankingInfo.swiftCode}
-                onChange={(e) =>
-                  onUpdateInvoiceData({
-                    ...invoiceData,
-                    bankingInfo: {
-                      ...invoiceData.bankingInfo,
-                      swiftCode: e.target.value,
-                    },
-                  })
-                }
-                placeholder="BOFAUS3N"
-                className="uppercase"
-              />
-              <p className="text-xs text-muted-foreground">
-                8-11 character code for international wire transfers
-              </p>
-              {(invoiceData.bankingInfo.bankName ||
-                invoiceData.bankingInfo.accountNumber ||
-                invoiceData.bankingInfo.swiftCode) && (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  Required when providing banking information
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="iban">IBAN (International)</Label>
-              <Input
-                id="iban"
-                value={invoiceData.bankingInfo.iban}
-                onChange={(e) =>
-                  onUpdateInvoiceData({
-                    ...invoiceData,
-                    bankingInfo: {
-                      ...invoiceData.bankingInfo,
-                      iban: e.target.value,
-                    },
-                  })
-                }
-                placeholder="GB29 NWBK 6016 1331 9268 19"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

@@ -6,6 +6,7 @@ import { ClassicTemplate } from './templates/ClassicTemplate';
 import { MinimalTemplate } from './templates/MinimalTemplate';
 import { CreativeTemplate } from './templates/CreativeTemplate';
 import { CorporateTemplate } from './templates/CorporateTemplate';
+import { XeroTemplate } from './templates/XeroTemplate';
 
 interface InvoicePreviewProps {
   invoiceData: InvoiceData;
@@ -26,6 +27,8 @@ export const InvoicePreview = forwardRef<HTMLDivElement, InvoicePreviewProps>(
           return <CreativeTemplate invoiceData={invoiceData} ref={ref} />;
         case InvoiceTemplate.CORPORATE:
           return <CorporateTemplate invoiceData={invoiceData} ref={ref} />;
+        case InvoiceTemplate.XERO:
+          return <XeroTemplate invoiceData={invoiceData} ref={ref} />;
         default:
           return <ModernTemplate invoiceData={invoiceData} ref={ref} />;
       }

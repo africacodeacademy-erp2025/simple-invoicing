@@ -20,7 +20,7 @@ const ForgotPassword: React.FC = () => {
     try {
       const res = await AuthService.requestPasswordReset(email);
       if (!res.success) {
-        toast({ title: "Error", description: res.message || "Failed to send reset email.", variant: "destructive" });
+        toast({ title: "Password Reset Error", description: res.message || "Failed to send reset email. Please try again.", variant: "destructive" });
         return;
       }
 
@@ -28,7 +28,7 @@ const ForgotPassword: React.FC = () => {
       // optionally navigate back to sign in after a short delay
       setTimeout(() => navigate("/signin"), 1200);
     } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Unexpected error", variant: "destructive" });
+      toast({ title: "Password Reset Error", description: err instanceof Error ? err.message : "An unexpected error occurred during password reset. Please try again.", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }

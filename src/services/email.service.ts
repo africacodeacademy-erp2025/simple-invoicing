@@ -51,12 +51,47 @@ export class EmailService {
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Email service error:", errorText);
+        // Try to parse JSON error body for SendGrid-style errors
+        let parsed: any = null;
+        try {
+          parsed = await response.json();
+        } catch (e) {
+          // fallback to text
+        }
+
+        const rawText = parsed ? JSON.stringify(parsed) : await response.text();
+        console.error("Email service error:", rawText);
+
+        // Detect duplicate recipient SendGrid error and return a friendly message
+        const containsDuplicateError = (() => {
+          try {
+            const errorsArray = parsed?.error?.errors || parsed?.errors || [];
+            if (Array.isArray(errorsArray)) {
+              return errorsArray.some((err: any) =>
+                typeof err.message === "string" &&
+                (err.message.includes("Each email address") || err.message.toLowerCase().includes("duplicate"))
+              );
+            }
+
+            // Fallback: check raw text
+            return typeof rawText === "string" && (rawText.includes("Each email address") || rawText.toLowerCase().includes("duplicate"));
+          } catch (e) {
+            return false;
+          }
+        })();
+
+        if (containsDuplicateError) {
+          return {
+            success: false,
+            message: "Duplicate recipient detected: please ensure each recipient email is unique (do not reuse the same address in To, Cc, or Bcc).",
+            error: rawText,
+          };
+        }
+
         return {
           success: false,
           message: "Failed to send email",
-          error: `HTTP ${response.status}: ${errorText}`,
+          error: `HTTP ${response.status}: ${rawText}`,
         };
       }
 
@@ -71,6 +106,19 @@ export class EmailService {
           message: "Invoice sent successfully",
         };
       } else {
+        // If backend returned an error payload, detect duplicate recipient error there too
+        const errorPayload = result.error || result;
+        const errorsArray = errorPayload?.errors || [];
+        const duplicateInResult = Array.isArray(errorsArray) && errorsArray.some((err: any) => typeof err.message === 'string' && (err.message.includes('Each email address') || err.message.toLowerCase().includes('duplicate')));
+
+        if (duplicateInResult) {
+          return {
+            success: false,
+            message: "Duplicate recipient detected: please ensure each recipient email is unique (do not reuse the same address in To, Cc, or Bcc).",
+            error: JSON.stringify(result.error || result),
+          };
+        }
+
         return {
           success: false,
           message: result.message || "Failed to send email",
