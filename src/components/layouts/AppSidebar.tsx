@@ -21,6 +21,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({ isOpen }) => {
     { path: "/app/invoices", icon: <FileText className="h-4 w-4" />, label: "Invoices" },
     { path: "/app/clients", icon: <Users className="h-4 w-4" />, label: "Clients" },
     { path: "/app/billing", icon: <DollarSign className="h-4 w-4" />, label: "Billing" },
+    {path:"/app/templates", icon:<FileText className="h-4 w-4" />, label:"Templates"},
   ];
 
   const bottomLinks = [
